@@ -3,6 +3,7 @@
 __pycache__
 
 lightning_logs
+massSpecGymTest
 
 *.h5t
 
