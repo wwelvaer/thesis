@@ -342,7 +342,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 out = self.transformer.decoder(tgt, memory, tgt_mask=tgt_mask)
                 out = self.tgt_decoder(out[-1, :]) # (batch_size * nr_preds, vocab_size)
 
-                ### Top-k sampling
+                ### Top-q sampling
                 # Scale logits wrt temperature
                 scaled_logits = out / temperature if temperature != None else out
                 probs = F.softmax(scaled_logits, dim=-1)
@@ -354,8 +354,8 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
 
                 # Set logits for unselected tokens to -inf
                 mask = torch.full_like(probs, float('-inf'))
-                mask.scatter_(dim=-1, index=sorted_indices, src=sorted_probs.where(~top_q, float('-inf')))
-                
+                mask.scatter_(dim=-1, index=sorted_indices, src=sorted_probs.where(top_q, float('-inf')))
+
                 # Compute probabilities
                 probabilities = F.softmax(mask, dim=-1)
 
