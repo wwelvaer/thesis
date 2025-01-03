@@ -351,11 +351,13 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 # Select top-q tokens
                 sorted_probs, sorted_indices = torch.sort(probs, dim=-1, descending=True)
                 top_q = torch.cumsum(sorted_probs, dim=-1) < q
+                # Force most common token to always be selected (in case its prob > q)
+                top_q[:,0] = torch.full_like(top_q[:,0], True)
 
                 # Set logits for unselected tokens to -inf
                 mask = torch.full_like(probs, float('-inf'))
                 mask.scatter_(dim=-1, index=sorted_indices, src=sorted_probs.where(top_q, float('-inf')))
-
+                
                 # Compute probabilities
                 probabilities = F.softmax(mask, dim=-1)
 
