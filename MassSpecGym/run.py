@@ -284,6 +284,7 @@ def main(args):
         #check_val_every_n_epoch=args.check_val_every_n_epoch,
         val_check_interval=args.val_check_interval,
         callbacks=callbacks,
+        enable_checkpointing=not args.no_checkpoint,
     )
 
     # Prepare data module to validate or test before training
