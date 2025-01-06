@@ -2,6 +2,8 @@
 
 PROJECT="GridSearch"
 
+ml load CUDA-Python/12.1.0-gfbf-2023a-CUDA-12.1.1
+
 python3 hyperparams.py | while IFS= read -r line; do
     JOBNAME=$(echo $line | cut -d "|" -f1)
     ARGS=$(echo $line | cut -d "|" -f2-)
@@ -26,7 +28,7 @@ source python3-11-venv/bin/activate
 
 export WANDB_API_KEY="c98a88c3a37fb338089fe9d5d9b71abfc376a8d3"
 
-python run.py --job_key 1 --run_name $JOBNAME --max_epochs 100 --task de_novo --model smiles_transformer --log_only_loss_at_stages "train, val" --project_name $PROJECT --check_val_every_n_epoch 1 --patience 5 $ARGS
+python run.py --job_key 1 --run_name $JOBNAME --no_checkpoint True --max_epochs 100 --task de_novo --model smiles_transformer --log_only_loss_at_stages "train, val" --project_name $PROJECT --check_val_every_n_epoch 1 --patience 5 $ARGS
 EOF
 
         # Submit the job
@@ -34,5 +36,6 @@ EOF
 
         # Clean up the temporary job script
         rm -f $job_script
+	break
     fi
 done

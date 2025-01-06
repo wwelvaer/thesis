@@ -84,6 +84,7 @@ parser.add_argument('--log_only_loss_at_stages', default=(),
     type=lambda stages: [Stage(s) for s in stages.strip().replace(' ', '').split(',')])
 parser.add_argument('--df_test_pth', type=Path, default=None)
 parser.add_argument('--checkpoint_pth', type=Path, default=None)
+parser.add_argument('--no_checkpoint', type=bool, default=False)
 
 # - De novo
 
@@ -253,16 +254,17 @@ def main(args):
     callbacks = []
     for i, monitor in enumerate(model.get_checkpoint_monitors()):
         monitor_name = monitor['monitor']
-        checkpoint = pl.callbacks.ModelCheckpoint(
-            monitor=monitor_name,
-            save_top_k=1,
-            mode=monitor['mode'],
-            dirpath=Path(args.project_name) / args.run_name,
-            filename=f'{{step:06d}}-{{{monitor_name}:03.03f}}',
-            auto_insert_metric_name=True,
-            save_last=(i == 0)
-        )
-        callbacks.append(checkpoint)
+        if not args.no_checkpoint:
+            checkpoint = pl.callbacks.ModelCheckpoint(
+                monitor=monitor_name,
+                save_top_k=1,
+                mode=monitor['mode'],
+                dirpath=Path(args.project_name) / args.run_name,
+                filename=f'{{step:06d}}-{{{monitor_name}:03.03f}}',
+                auto_insert_metric_name=True,
+                save_last=(i == 0)
+            )
+            callbacks.append(checkpoint)
         if args.patience > 0 and monitor.get('early_stopping', False):
             early_stopping = EarlyStopping(
                 monitor=monitor_name,
