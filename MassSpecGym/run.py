@@ -99,6 +99,7 @@ parser.add_argument('--k_predictions', type=int, default=10)
 parser.add_argument('--pre_norm', type=bool, default=False)
 parser.add_argument('--temperature', type=float, default=1)
 parser.add_argument('--smiles_tokenizer', choices=['smiles_bpe', 'selfies'], default='smiles_bpe')
+parser.add_argument('--full_selfies_vocab', default=False)
 parser.add_argument('--use_chemical_formula', action='store_true')
 
 parser.add_argument('--sampler', choices=['greedy', 'top-k', 'top-k-parallel', 'top-q-parallel'], default='greedy')
@@ -199,7 +200,7 @@ def main(args):
                 smiles_tokenizer = SmilesBPETokenizer(max_len=max_smiles_len)
             elif args.smiles_tokenizer == 'selfies':
                 max_smiles_len = 150
-                smiles_tokenizer = SelfiesTokenizer(max_len=max_smiles_len)
+                smiles_tokenizer = SelfiesTokenizer(max_len=max_smiles_len, selfies_train=("semantic_robust_alphabet" if args.full_selfies_vocab else None))
             else:
                 raise NotImplementedError(f"Tokenizer {args.smiles_tokenizer} not implemented")
             model = SmilesTransformer(
@@ -238,6 +239,8 @@ def main(args):
         )
         model.sampler = args.sampler
         model.k = args.k
+        model.q = args.q
+        model.temperature = args.temperature
 
     # Init logger
     if args.no_wandb:
@@ -297,6 +300,9 @@ def main(args):
 
         # Train
         trainer.fit(model, datamodule=data_module)
+    
+    model.log_only_loss_at_stages = [Stage("train")]
+    trainer.validate(model, datamodule=data_module)
 
     # Test
     trainer.test(model, datamodule=data_module)

@@ -5,8 +5,8 @@ from collections import OrderedDict
 
 hyperparams = OrderedDict({
     "lr": [10 ** -x for x in np.arange(3, 4.01, 0.5)],
-    "batch_size": [512, 1024, 2048],
-    "d_model": [128, 256, 512],
+    "batch_size": [2048],#[512, 1024, 2048],
+    "d_model": [512],#[128, 256, 512],
     "nhead": [2, 4, 8],
     "num_encoder_layers": [2, 3, 4],
     "num_decoder_layers": [2, 3, 4],
