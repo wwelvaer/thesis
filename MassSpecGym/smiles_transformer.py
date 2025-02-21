@@ -203,9 +203,17 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         # Transpose from (k, batch_size) to (batch_size, k)
         decoded_smiles_str = list(map(list, zip(*decoded_smiles_str)))
 
+        # Load metadata
+        try:
+            with open(f'NAIVE_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}.pkl', 'rb') as f:
+                batch_meta_data = pickle.load(f)
+        except:
+            batch_meta_data = []
+
+        batch_meta_data.append(meta_data)
         # Save metadata
         with open(f'NAIVE_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}.pkl', 'wb') as f:
-            pickle.dump(meta_data, f)
+            pickle.dump(batch_meta_data, f)
 
         return decoded_smiles_str
 
