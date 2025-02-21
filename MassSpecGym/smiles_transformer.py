@@ -219,7 +219,6 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         return decoded_smiles_str
 
     def save_metadata(self, name, meta_data):
-        print(name)
         # Load metadata
         try:
             with open(f'{name}.pkl', 'rb') as f:
