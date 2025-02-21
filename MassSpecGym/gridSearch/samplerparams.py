@@ -3,12 +3,11 @@ from decimal import Decimal
 import itertools
 from collections import OrderedDict
 
-# TODO change to real path
-model_path = "smiles_lowest_val_loss"
+model_path = "models/smiles_lowest_val_loss.ckpt"
 model_name = "SMILES_LOW_VAL_LOSS"
 
 extra_params = [
- ("smiles_tokenizer", "smiles"),
+ ("smiles_tokenizer", "smiles_bpe"),
  ("full_selfies_vocab", "False"),
 ]
 
@@ -56,6 +55,6 @@ for s in samplers:
     for values in itertools.product(*[hyperparams[p] for p in params]):
         job_args = [("checkpoint_pth", model_path), ("sampler", s)] + list(zip(params, values))
         args = " ".join(["--" + k + " " + str(v) for k, v in extra_params + job_args])
-        jobname = "_".join([shortened_params[k] + sanitized_values[k](v) for k, v in job_args])
+        jobname = "_".join([shortened_params[k] + sanitized_values[k](v) for k, v in job_args]) 
         print(jobname + "|" + args)
 

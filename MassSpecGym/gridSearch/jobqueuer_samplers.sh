@@ -18,7 +18,7 @@ python3 samplerparams.py | while IFS= read -r line; do
         cat <<EOF > $job_script
 #!/bin/bash
 #PBS -N $JOBNAME
-#PBS -l walltime=3:00:00
+#PBS -l walltime=10:00:00
 #PBS -l gpus=1
 #PBS -l mem=32gb
 
@@ -28,7 +28,7 @@ source python3-11-venv/bin/activate
 
 export WANDB_API_KEY="c98a88c3a37fb338089fe9d5d9b71abfc376a8d3"
 
-python run.py --job_key 1 --run_name $JOBNAME --max_epochs 100 --task de_novo --model smiles_transformer --log_only_loss_at_stages "train, val" --project_name $PROJECT --check_val_every_n_epoch 1 --patience 5 $ARGS
+python run.py --job_key 1 --run_name $JOBNAME --task de_novo --model smiles_transformer --log_only_loss_at_stages "train, test" --test_only --project_name $PROJECT $ARGS
 EOF
 
         # Submit the job

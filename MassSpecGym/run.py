@@ -303,6 +303,7 @@ def main(args):
     
     model.log_only_loss_at_stages = [Stage("train")]
     trainer.validate(model, datamodule=data_module)
+    model.log_only_loss_at_stages = args.log_only_loss_at_stages
 
     # Test
     trainer.test(model, datamodule=data_module)
