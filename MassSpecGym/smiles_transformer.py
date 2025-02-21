@@ -55,7 +55,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         if self.k_predictions == 1:  # TODO: this logic should be changed because sampling with k = 1 also makes sense
             self.temperature = None
 
-        samplers = ["naive", "naive-parallel", "top-k", "top-k-parallel", "top-q",  "top-q-parallel"]
+        samplers = ["greedy", "naive", "naive-parallel", "top-k", "top-k-parallel", "top-q",  "top-q-parallel"]
         assert sampler in samplers, f"Unknown sampler {sampler}, known samplers: {samplers}"
         self.sampler = sampler
         self.k = k
@@ -156,7 +156,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         else:
             if self.sampler == "naive":
                 mols_pred = self.decode_smiles(batch)
-            elif self.sampler == "naive_parallel":
+            elif self.sampler == "naive-parallel":
                 mols_pred = self.decode_smiles_parallel(batch)
             elif self.sampler == "top-k":
                 mols_pred = self.decode_smiles_top_k(batch)
