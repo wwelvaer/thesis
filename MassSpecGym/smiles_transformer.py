@@ -52,7 +52,8 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         if self.k_predictions == 1:  # TODO: this logic should be changed because sampling with k = 1 also makes sense
             self.temperature = None
 
-        assert sampler in ["greedy", "top-k", "top-k-parallel", "top-q-parallel"], f"Unknown sampler {sampler}, known samplers: ['greedy', 'top-k', 'top-k-parallel', 'top-q-parallel']"
+        samplers = ["greedy", "top-k", "top-k-parallel", "top-q",  "top-q-parallel"]
+        assert sampler in samplers, f"Unknown sampler {sampler}, known samplers: {samplers}"
         self.sampler = sampler
         self.k = k
         self.q = q
@@ -156,6 +157,8 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 mols_pred = self.decode_smiles_top_k(batch)
             elif self.sampler == "top-k-parallel":
                 mols_pred = self.decode_smiles_top_k_parallel(batch)
+            elif self.sampler == "top-q":
+                mols_pred = self.decode_smiles_top_q(batch)
             elif self.sampler == "top-q-parallel":
                 mols_pred = self.decode_smiles_top_q_parallel(batch)
             else:
@@ -236,7 +239,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             decoded_smiles = [seq.tolist() for seq in decoded_smiles]
             decoded_smiles_str.append(self.smiles_tokenizer.decode_batch(decoded_smiles))
 
-        # Transpose from (k, batch_size) to (batch_size, k)
+        # Transpose from (nr_preds, batch_size) to (batch_size, nr_preds)
         decoded_smiles_str = list(map(list, zip(*decoded_smiles_str)))
 
         return decoded_smiles_str
@@ -251,6 +254,23 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             )
         return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
     
+    def decode_smiles_top_q(self, batch):
+        decoded_smiles_str = []
+        for _ in range(self.k_predictions):
+            decoded_smiles = self.top_q_decode_one(
+                                batch,
+                                max_len=self.max_smiles_len,
+                                temperature=self.temperature,
+                                q=self.q
+            )
+            decoded_smiles = [seq.tolist() for seq in decoded_smiles]
+            decoded_smiles_str.append(self.smiles_tokenizer.decode_batch(decoded_smiles))
+
+        # Transpose from (nr_preds, batch_size) to (batch_size, nr_preds)
+        decoded_smiles_str = list(map(list, zip(*decoded_smiles_str)))
+
+        return decoded_smiles_str
+
     def decode_smiles_top_q_parallel(self, batch):
         decoded_smiles = self.top_q_decode(
                                 batch,
@@ -383,7 +403,6 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             src = self.src_encoder(spec)  # (seq_len, batch_size, d_model)
             if self.embedding_norm:
                 src = src / src.norm(dim=-1, keepdim=True)  # Normalize to unit norm
-            #src = src * (self.d_model**0.5)
             memory = self.transformer.encoder(src, src_key_padding_mask=src_key_padding_mask)
             ####
 
@@ -423,4 +442,58 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
 
             return preds
 
+    def top_q_decode_one(self, batch, max_len, temperature, q):
+        with torch.inference_mode():
+            spec = self.scale_spec_batch(batch)    # (batch_size, seq_len, in_dim)
+            batch_size = spec.shape[0]
+
+            #### Calculate Memory (code snippet from greedy_decode function)
+            src_key_padding_mask = self.generate_src_padding_mask(spec)
+
+            spec = spec.permute(1, 0, 2)  # (seq_len, batch_size, in_dim)
+            src = self.src_encoder(spec)  # (seq_len, batch_size, d_model)
+            if self.embedding_norm:
+                src = src / src.norm(dim=-1, keepdim=True)  # Normalize to unit norm
+            memory = self.transformer.encoder(src, src_key_padding_mask=src_key_padding_mask)
+            ####
+
+            # tensor that holds predicted tokens for each prediction
+            preds = torch.full((batch_size, max_len), self.start_token_id, device=self.device)
+
+            for i in range(max_len - 1):
+                last_tokens = preds[:,:i+1].T # (batch_size, seq_length) to (seq_length, batch_size)
+                tgt = self.tgt_embedding(last_tokens)# * (self.d_model**0.5) # embedding scaling
+                tgt_mask = self.transformer.generate_square_subsequent_mask(tgt.size(0)).to(src.device)
+
+                out = self.transformer.decoder(tgt, memory, tgt_mask=tgt_mask)
+                out = self.tgt_decoder(out[-1, :]) # (batch_size, vocab_size)
+
+                ### Top-q sampling
+                # Scale logits wrt temperature
+                scaled_logits = out / temperature if temperature != None else out
+                probs = F.softmax(scaled_logits, dim=-1)
+
+                ## Apply top-q filtering
+                # Select top-q tokens
+                sorted_probs, sorted_indices = torch.sort(probs, dim=-1, descending=True)
+                top_q = torch.cumsum(sorted_probs, dim=-1) < q
+                # Force most common token to always be selected (in case its prob > q)
+                top_q[:,0] = torch.full_like(top_q[:,0], True)
+
+                # Set logits for unselected tokens to -inf
+                mask = torch.full_like(probs, float('-inf'))
+                mask.scatter_(dim=-1, index=sorted_indices, src=sorted_probs.where(top_q, float('-inf')))
+                
+                # Compute probabilities
+                probabilities = F.softmax(mask, dim=-1)
+                
+                # Sample from the adjusted distribution
+                next_tokens = torch.multinomial(probabilities, num_samples=1) # (batch_size)
+                preds[:,i+1] = next_tokens.squeeze(1)
+
+                # End loop when all sequences have end token
+                if torch.all(next_tokens == self.end_token_id):
+                    break
+
+            return preds
 
