@@ -10,6 +10,9 @@ from massspecgym.models.de_novo.base import DeNovoMassSpecGymModel
 from massspecgym.definitions import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN
 import pytorch_lightning as pl
 
+import pickle
+from decimal import Decimal
+
 class SmilesTransformer(DeNovoMassSpecGymModel):
     def __init__(
         self,
@@ -173,6 +176,13 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
 
     def decode_smiles(self, batch):
         decoded_smiles_str = []
+
+        meta_data = {
+            'forward_passes': [],
+            'prediction_lengths': [],
+            'temp': self.temperature
+        }
+        
         for _ in range(self.k_predictions):
             decoded_smiles = self.greedy_decode(
                 batch,
@@ -181,12 +191,25 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             )
 
             decoded_smiles = [seq.tolist() for seq in decoded_smiles]
+            
+            # Store prediction length and number of forward passes
+            meta_data['forward_passes'].append(len(decoded_smiles[0]) - 1)
+            meta_data['prediction_lengths'].append([x.index(self.end_token_id) if self.end_token_id in x else -1 for x in decoded_smiles])            
+
             decoded_smiles_str.append(self.smiles_tokenizer.decode_batch(decoded_smiles))
 
         # Transpose from (k, batch_size) to (batch_size, k)
         decoded_smiles_str = list(map(list, zip(*decoded_smiles_str)))
 
+        # Save metadata
+        with open(f'GREEDY_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}.pkl', 'wb') as f:
+            pickle.dump(meta_data, f)
+
         return decoded_smiles_str
+
+    def sanitize_decimal(self, x, p):
+        a, b = (f"%.{p-1}E" % Decimal(x)).split("E")
+        return str(int(Decimal(a) * (10 ** (p-1)))) + "e" + str(int(b)-(p-1))
 
     def greedy_decode(self, batch, max_len, temperature):
         with torch.inference_mode():
@@ -221,7 +244,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 next_token = next_token.unsqueeze(0)  # (1, batch_size)
                 out_tokens = torch.cat([out_tokens, next_token], dim=0)
                 
-                if torch.all(next_token == self.end_token_id):
+                if torch.all(torch.logical_or(next_token == self.end_token_id, next_token == self.pad_token_id)):
                     break
 
             out_tokens = out_tokens.permute(1, 0)  # (batch_size, seq_len)
