@@ -1,10 +1,10 @@
 #!/bin/bash
 
-PROJECT="GridSearch"
+PROJECT="SamplersGridSearch"
 
 ml load CUDA-Python/12.1.0-gfbf-2023a-CUDA-12.1.1
 
-python3 hyperparams.py | while IFS= read -r line; do
+python3 samplerparams.py | while IFS= read -r line; do
     JOBNAME=$(echo $line | cut -d "|" -f1)
     ARGS=$(echo $line | cut -d "|" -f2-)
 
@@ -18,9 +18,9 @@ python3 hyperparams.py | while IFS= read -r line; do
         cat <<EOF > $job_script
 #!/bin/bash
 #PBS -N $JOBNAME
-#PBS -l walltime=12:00:00
+#PBS -l walltime=3:00:00
 #PBS -l gpus=1
-#PBS -l mem=128gb
+#PBS -l mem=32gb
 
 cd data/Thesis
 
@@ -28,7 +28,7 @@ source python3-11-venv/bin/activate
 
 export WANDB_API_KEY="c98a88c3a37fb338089fe9d5d9b71abfc376a8d3"
 
-python run.py --job_key 1 --run_name $JOBNAME --no_checkpoint True --max_epochs 100 --task de_novo --model smiles_transformer --log_only_loss_at_stages "train, val" --project_name $PROJECT --check_val_every_n_epoch 1 --patience 5 $ARGS
+python run.py --job_key 1 --run_name $JOBNAME --max_epochs 100 --task de_novo --model smiles_transformer --log_only_loss_at_stages "train, val" --project_name $PROJECT --check_val_every_n_epoch 1 --patience 5 $ARGS
 EOF
 
         # Submit the job

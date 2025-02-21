@@ -9,3 +9,5 @@ massSpecGymTest
 
 *.h5t
 
+*.e[0-9]*
+*.o[0-9]*

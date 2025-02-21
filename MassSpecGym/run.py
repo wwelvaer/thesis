@@ -84,6 +84,7 @@ parser.add_argument('--log_only_loss_at_stages', default=(),
     type=lambda stages: [Stage(s) for s in stages.strip().replace(' ', '').split(',')])
 parser.add_argument('--df_test_pth', type=Path, default=None)
 parser.add_argument('--checkpoint_pth', type=Path, default=None)
+parser.add_argument('--no_checkpoint', type=bool, default=False)
 
 # - De novo
 
@@ -98,6 +99,7 @@ parser.add_argument('--k_predictions', type=int, default=10)
 parser.add_argument('--pre_norm', type=bool, default=False)
 parser.add_argument('--temperature', type=float, default=1)
 parser.add_argument('--smiles_tokenizer', choices=['smiles_bpe', 'selfies'], default='smiles_bpe')
+parser.add_argument('--full_selfies_vocab', default=False)
 parser.add_argument('--use_chemical_formula', action='store_true')
 
 parser.add_argument('--sampler', choices=['greedy', 'top-k', 'top-k-parallel', 'top-q-parallel'], default='greedy')
@@ -198,7 +200,7 @@ def main(args):
                 smiles_tokenizer = SmilesBPETokenizer(max_len=max_smiles_len)
             elif args.smiles_tokenizer == 'selfies':
                 max_smiles_len = 150
-                smiles_tokenizer = SelfiesTokenizer(max_len=max_smiles_len)
+                smiles_tokenizer = SelfiesTokenizer(max_len=max_smiles_len, selfies_train=("semantic_robust_alphabet" if args.full_selfies_vocab else None))
             else:
                 raise NotImplementedError(f"Tokenizer {args.smiles_tokenizer} not implemented")
             model = SmilesTransformer(
@@ -237,6 +239,8 @@ def main(args):
         )
         model.sampler = args.sampler
         model.k = args.k
+        model.q = args.q
+        model.temperature = args.temperature
 
     # Init logger
     if args.no_wandb:
@@ -253,16 +257,17 @@ def main(args):
     callbacks = []
     for i, monitor in enumerate(model.get_checkpoint_monitors()):
         monitor_name = monitor['monitor']
-        checkpoint = pl.callbacks.ModelCheckpoint(
-            monitor=monitor_name,
-            save_top_k=1,
-            mode=monitor['mode'],
-            dirpath=Path(args.project_name) / args.run_name,
-            filename=f'{{step:06d}}-{{{monitor_name}:03.03f}}',
-            auto_insert_metric_name=True,
-            save_last=(i == 0)
-        )
-        callbacks.append(checkpoint)
+        if not args.no_checkpoint:
+            checkpoint = pl.callbacks.ModelCheckpoint(
+                monitor=monitor_name,
+                save_top_k=1,
+                mode=monitor['mode'],
+                dirpath=Path(args.project_name) / args.run_name,
+                filename=f'{{step:06d}}-{{{monitor_name}:03.03f}}',
+                auto_insert_metric_name=True,
+                save_last=(i == 0)
+            )
+            callbacks.append(checkpoint)
         if args.patience > 0 and monitor.get('early_stopping', False):
             early_stopping = EarlyStopping(
                 monitor=monitor_name,
@@ -282,6 +287,7 @@ def main(args):
         #check_val_every_n_epoch=args.check_val_every_n_epoch,
         val_check_interval=args.val_check_interval,
         callbacks=callbacks,
+        enable_checkpointing=not args.no_checkpoint,
     )
 
     # Prepare data module to validate or test before training
@@ -294,6 +300,9 @@ def main(args):
 
         # Train
         trainer.fit(model, datamodule=data_module)
+    
+    model.log_only_loss_at_stages = [Stage("train")]
+    trainer.validate(model, datamodule=data_module)
 
     # Test
     trainer.test(model, datamodule=data_module)
