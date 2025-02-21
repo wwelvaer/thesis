@@ -34,8 +34,11 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         sampler: str = "naive",
         k: int = 10,
         q: float = 0.8,
+        beam_width: int = 20,
+        alpha: float = 1.0,
         mz_scaling: bool = False,
         embedding_norm: bool = False,
+        store_metadata: bool = False,
         *args,
         **kwargs
     ):
@@ -55,11 +58,16 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         if self.k_predictions == 1:  # TODO: this logic should be changed because sampling with k = 1 also makes sense
             self.temperature = None
 
-        samplers = ["greedy", "naive", "naive-parallel", "top-k", "top-k-parallel", "top-q",  "top-q-parallel"]
+        samplers = ["greedy", "naive", "naive-parallel", "top-k", "top-k-parallel", "top-q",  "top-q-parallel", "beam-search"]
         assert sampler in samplers, f"Unknown sampler {sampler}, known samplers: {samplers}"
         self.sampler = sampler
         self.k = k
         self.q = q
+        self.beam_width = beam_width
+        self.alpha = alpha
+
+        self.store_metadata = store_metadata
+
         self.input_dim = input_dim
         self.mz_scaling = mz_scaling
         self.embedding_norm = embedding_norm
@@ -166,6 +174,8 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 mols_pred = self.decode_smiles_top_q(batch)
             elif self.sampler == "top-q-parallel":
                 mols_pred = self.decode_smiles_top_q_parallel(batch)
+            elif self.sampler == "beam-search":
+                mols_pred = self.decode_smiles_beam_search(batch)
             else:
                 raise "unkown decoder"
         return dict(loss=loss, mols_pred=mols_pred)
@@ -203,19 +213,24 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         # Transpose from (k, batch_size) to (batch_size, k)
         decoded_smiles_str = list(map(list, zip(*decoded_smiles_str)))
 
+        if self.store_metadata:
+            self.save_metadata(f'NAIVE_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
+
+        return decoded_smiles_str
+
+    def save_metadata(self, name, meta_data):
+        print(name)
         # Load metadata
         try:
-            with open(f'NAIVE_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}.pkl', 'rb') as f:
+            with open(f'{name}.pkl', 'rb') as f:
                 batch_meta_data = pickle.load(f)
         except:
             batch_meta_data = []
 
         batch_meta_data.append(meta_data)
         # Save metadata
-        with open(f'NAIVE_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}.pkl', 'wb') as f:
+        with open(f'{name}.pkl', 'wb') as f:
             pickle.dump(batch_meta_data, f)
-
-        return decoded_smiles_str
 
     def sanitize_decimal(self, x, p):
         a, b = (f"%.{p-1}E" % Decimal(x)).split("E")
@@ -316,6 +331,12 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
     
     def decode_smiles_top_k(self, batch):
         decoded_smiles_str = []
+        meta_data = {
+            'forward_passes': [],
+            'prediction_lengths': [],
+            'temp': self.temperature,
+            'k': self.k
+        }
         for _ in range(self.k_predictions):
             decoded_smiles = self.top_k_decode_one(
                                 batch,
@@ -326,8 +347,15 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             decoded_smiles = [seq.tolist() for seq in decoded_smiles]
             decoded_smiles_str.append(self.smiles_tokenizer.decode_batch(decoded_smiles))
 
+            # Store prediction length and number of forward passes
+            meta_data['forward_passes'].append(len(decoded_smiles[0]) - 1)
+            meta_data['prediction_lengths'].append([x.index(self.end_token_id) if self.end_token_id in x else -1 for x in decoded_smiles])
+
         # Transpose from (nr_preds, batch_size) to (batch_size, nr_preds)
         decoded_smiles_str = list(map(list, zip(*decoded_smiles_str)))
+
+        if self.store_metadata:
+            self.save_metadata(f'TopK_metadata_k-{self.k}_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
 
         return decoded_smiles_str
 
@@ -343,6 +371,14 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
     
     def decode_smiles_top_q(self, batch):
         decoded_smiles_str = []
+
+        meta_data = {
+            'forward_passes': [],
+            'prediction_lengths': [],
+            'temp': self.temperature,
+            'q': self.q
+        }
+
         for _ in range(self.k_predictions):
             decoded_smiles = self.top_q_decode_one(
                                 batch,
@@ -352,6 +388,13 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             )
             decoded_smiles = [seq.tolist() for seq in decoded_smiles]
             decoded_smiles_str.append(self.smiles_tokenizer.decode_batch(decoded_smiles))
+
+            # Store prediction length and number of forward passes
+            meta_data['forward_passes'].append(len(decoded_smiles[0]) - 1)
+            meta_data['prediction_lengths'].append([x.index(self.end_token_id) if self.end_token_id in x else -1 for x in decoded_smiles])
+
+        if self.store_metadata:
+            self.save_metadata(f'TopQ_metadata_q-{self.sanitize_decimal(self.q, 2)}_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
 
         # Transpose from (nr_preds, batch_size) to (batch_size, nr_preds)
         decoded_smiles_str = list(map(list, zip(*decoded_smiles_str)))
@@ -584,3 +627,104 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
 
             return preds
 
+    def _encode_spec(self, spec, nr_preds):
+        # repeat input "beam_width" times for predictions in one decode
+        repeated_spec = spec.repeat_interleave(nr_preds, dim=0) # (batch_size * beam_width, seq_len, in_dim)
+
+        #### Calculate Memory (code snippet from greedy_decode function)
+        src_key_padding_mask = self.generate_src_padding_mask(repeated_spec)
+        
+        repeated_spec = repeated_spec.permute(1, 0, 2)  # (seq_len, batch_size * beam_width, in_dim)
+        src = self.src_encoder(repeated_spec)  # (seq_len, batch_size * beam_width, d_model)
+        if self.embedding_norm:
+            src = src / src.norm(dim=-1, keepdim=True)  # Normalize to unit norm
+        #src = src * (self.d_model**0.5)
+        memory = self.transformer.encoder(src, src_key_padding_mask=src_key_padding_mask)
+        return memory
+
+    def _decode_step(self, memory, preds, batch_size, nr_preds, i):
+        last_tokens = preds[:,:,:i+1].reshape(batch_size * nr_preds, i+1).T # (batch_size, nr_preds, seq_length) to (seq_length, batch_size * nr_preds)
+        tgt = self.tgt_embedding(last_tokens)
+        tgt_mask = self.transformer.generate_square_subsequent_mask(tgt.size(0))#.to(src.device)
+        out = self.transformer.decoder(tgt, memory, tgt_mask=tgt_mask)
+        out = self.tgt_decoder(out[-1, :]) # (batch_size * nr_preds, vocab_size)
+        return out
+
+    def decode_smiles_beam_search(self, batch):
+        decoded_smiles, i = self.decode_beam_search(
+                                batch,
+                                nr_preds=self.k_predictions,
+                                max_len=self.max_smiles_len,
+                                beam_width=self.beam_width,
+                                alpha=self.alpha
+            )
+        
+        if self.store_metadata:
+            meta_data = {
+                'forward_passes': i,
+                'beam_width': self.beam_width,
+                'alpha': self.alpha
+            }
+            self.save_metadata(f'BeamSearch_bw-{self.beam_width}_alpha-{self.sanitize_decimal(self.alpha, 2)}', meta_data)
+
+        return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
+
+    def decode_beam_search(self, batch, nr_preds, max_len, beam_width, alpha=1.0):
+        assert beam_width >= nr_preds, "Number of predictions can't be bigger than beam width"
+
+        calculate_score = lambda logprobsum, length, alpha=alpha: (1/(length**alpha)) * logprobsum
+
+        with torch.inference_mode():
+            spec = self.scale_spec_batch(batch)    # (batch_size, seq_len, in_dim)
+            batch_size = spec.shape[0]
+            memory = self._encode_spec(spec, beam_width)
+
+            # tensor that holds predicted tokens for each prediction
+            preds = torch.full((batch_size, beam_width, max_len), self.start_token_id, device=self.device)
+
+            # Tensor that holds for each path if it is still generating (True) or finished (False)
+            #path_still_generating = torch.full((batch_size*beam_width), True, device=self.device)
+
+            path_lengths = torch.full((batch_size,beam_width,), 1, device=self.device)
+            log_prob_sums = torch.full((batch_size,beam_width,), 0.0, device=self.device)
+
+            logprobs_stopped_seq = torch.full((self.vocab_size,), float('-inf'))
+            logprobs_stopped_seq[self.pad_token_id] = 0
+
+            for i in range(max_len - 1):
+                logits = self._decode_step(memory, preds, batch_size, beam_width, i)
+                # Compute probabilities
+                logprobs = F.log_softmax(logits, dim=-1) # (beam_width * batch_size, vocab_size)
+
+                _paths = path_lengths.reshape(beam_width*batch_size).unsqueeze(1) # (beam_width * batch_size, 1)
+                _prev_sums = log_prob_sums.reshape(beam_width*batch_size).unsqueeze(1) # (beam_width * batch_size, 1)
+                logprobs = torch.where(_paths == (i+1), logprobs, logprobs_stopped_seq) # Force stopped sequences to padding tokens
+                newlogprobsums = logprobs + _prev_sums
+                scores = calculate_score(newlogprobsums, _paths)
+                # => scores now contain all new scores for each new token in each beam and old scores for stopped paths in padding token
+
+                for b in range(batch_size):
+                    # Coordinates of (number of beamwidth) highest scores
+                    top_args = scores[b*beam_width:(b+1)*beam_width].flatten().argsort(descending=True)[:beam_width]
+                    rows = torch.div(top_args, self.vocab_size, rounding_mode="floor")
+                    token_ids = torch.remainder(top_args, self.vocab_size)
+                    
+                    # Update contexts
+                    preds[b,:,:i+1] = preds[b,:,:i+1][rows]
+                    preds[b,:,i+1] = token_ids
+
+                    # Update path lengths
+                    path_lengths[b] = torch.where(torch.logical_or(path_lengths[b] == (i+1), token_ids == self.end_token_id), i+2, path_lengths[b])
+                    # Update logprobsums
+                    log_prob_sums[b] = newlogprobsums[b*beam_width:(b+1)*beam_width][rows, token_ids]
+
+
+                next_tokens = preds[:,:,i+1]
+
+                # End loop when all sequences have end token
+                if torch.all(torch.logical_or(next_tokens == self.end_token_id, next_tokens == self.pad_token_id)):
+                    break
+            
+            # Select top nr_preds paths from preds
+            return preds[:,:nr_preds], i
+        
