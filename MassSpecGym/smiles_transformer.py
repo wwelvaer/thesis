@@ -31,7 +31,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         temperature: T.Optional[float] = 1.0,
         pre_norm: bool = False,
         chemical_formula: bool = False,
-        sampler: str = "greedy",
+        sampler: str = "naive",
         k: int = 10,
         q: float = 0.8,
         mz_scaling: bool = False,
@@ -55,7 +55,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         if self.k_predictions == 1:  # TODO: this logic should be changed because sampling with k = 1 also makes sense
             self.temperature = None
 
-        samplers = ["greedy", "top-k", "top-k-parallel", "top-q",  "top-q-parallel"]
+        samplers = ["naive", "naive-parallel", "top-k", "top-k-parallel", "top-q",  "top-q-parallel"]
         assert sampler in samplers, f"Unknown sampler {sampler}, known samplers: {samplers}"
         self.sampler = sampler
         self.k = k
@@ -154,8 +154,10 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         if stage in self.log_only_loss_at_stages:
             mols_pred = None
         else:
-            if self.sampler == "greedy":
+            if self.sampler == "naive":
                 mols_pred = self.decode_smiles(batch)
+            elif self.sampler == "naive_parallel":
+                mols_pred = self.decode_smiles_parallel(batch)
             elif self.sampler == "top-k":
                 mols_pred = self.decode_smiles_top_k(batch)
             elif self.sampler == "top-k-parallel":
@@ -184,7 +186,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         }
         
         for _ in range(self.k_predictions):
-            decoded_smiles = self.greedy_decode(
+            decoded_smiles = self.naive_decode(
                 batch,
                 max_len=self.max_smiles_len,
                 temperature=self.temperature,
@@ -202,7 +204,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         decoded_smiles_str = list(map(list, zip(*decoded_smiles_str)))
 
         # Save metadata
-        with open(f'GREEDY_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}.pkl', 'wb') as f:
+        with open(f'NAIVE_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}.pkl', 'wb') as f:
             pickle.dump(meta_data, f)
 
         return decoded_smiles_str
@@ -211,7 +213,16 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         a, b = (f"%.{p-1}E" % Decimal(x)).split("E")
         return str(int(Decimal(a) * (10 ** (p-1)))) + "e" + str(int(b)-(p-1))
 
-    def greedy_decode(self, batch, max_len, temperature):
+    def decode_smiles_parallel(self, batch):
+        decoded_smiles = self.naive_decode_parallel(
+                                batch,
+                                nr_preds=self.k_predictions,
+                                max_len=self.max_smiles_len,
+                                temperature=self.temperature
+            )
+        return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
+
+    def naive_decode(self, batch, max_len, temperature):
         with torch.inference_mode():
             spec = self.scale_spec_batch(batch)    # (batch_size, seq_len, in_dim) 
             src_key_padding_mask = self.generate_src_padding_mask(spec)   
@@ -249,6 +260,51 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
 
             out_tokens = out_tokens.permute(1, 0)  # (batch_size, seq_len)
             return out_tokens
+
+    def naive_decode_parallel(self, batch, nr_preds, max_len, temperature):
+        with torch.inference_mode():
+            spec = self.scale_spec_batch(batch)    # (batch_size, seq_len, in_dim)
+            batch_size = spec.shape[0]
+            # repeat input "nr_preds" times for predictions in one decode
+            spec = spec.repeat_interleave(nr_preds, dim=0) # (batch_size * nr_preds, seq_len, in_dim)
+
+            #### Calculate Memory (code snippet from greedy_decode function)
+            src_key_padding_mask = self.generate_src_padding_mask(spec)
+            
+            spec = spec.permute(1, 0, 2)  # (seq_len, batch_size * nr_preds, in_dim)
+            src = self.src_encoder(spec)  # (seq_len, batch_size * nr_preds, d_model)
+            if self.embedding_norm:
+                src = src / src.norm(dim=-1, keepdim=True)  # Normalize to unit norm
+            #src = src * (self.d_model**0.5)
+            memory = self.transformer.encoder(src, src_key_padding_mask=src_key_padding_mask)
+            ####
+
+            # tensor that holds predicted tokens for each prediction
+            preds = torch.full((batch_size, nr_preds, max_len), self.start_token_id, device=self.device)
+
+            for i in range(max_len - 1):
+                last_tokens = preds[:,:,:i+1].reshape(batch_size * nr_preds, i+1).T # (batch_size, nr_preds, seq_length) to (seq_length, batch_size * nr_preds)
+                tgt = self.tgt_embedding(last_tokens)# * (self.d_model**0.5) # embedding scaling
+                tgt_mask = self.transformer.generate_square_subsequent_mask(tgt.size(0)).to(src.device)
+                out = self.transformer.decoder(tgt, memory, tgt_mask=tgt_mask)
+                out = self.tgt_decoder(out[-1, :]) # (batch_size * nr_preds, vocab_size)
+
+                ### Naive sampling
+                # Scale logits wrt temperature
+                scaled_logits = out / temperature if temperature != None else out
+                
+                # Compute probabilities
+                probabilities = F.softmax(scaled_logits, dim=-1)
+
+                # Sample from the adjusted distribution
+                next_tokens = torch.multinomial(probabilities, num_samples=1) # (batch_size * nr_preds)
+                preds[:,:,i+1] = next_tokens.reshape(batch_size, nr_preds)
+
+                # End loop when all sequences have end token
+                if torch.all(next_tokens == self.end_token_id):
+                    break
+
+            return preds
     
     def decode_smiles_top_k(self, batch):
         decoded_smiles_str = []
