@@ -309,7 +309,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 preds[:,:,i+1] = next_tokens.reshape(batch_size, nr_preds)
 
                 # End loop when all sequences have end token
-                if torch.all(torch.logical_or(next_token == self.end_token_id, next_token == self.pad_token_id)):
+                if torch.all(torch.logical_or(next_tokens == self.end_token_id, next_tokens == self.pad_token_id)):
                     break
 
             return preds
@@ -416,7 +416,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 preds[:,:,i+1] = next_tokens.reshape(batch_size, nr_preds)
 
                 # End loop when all sequences have end token
-                if torch.all(torch.logical_or(next_token == self.end_token_id, next_token == self.pad_token_id)):
+                if torch.all(torch.logical_or(next_tokens == self.end_token_id, next_tokens == self.pad_token_id)):
                     break
 
             return preds
@@ -473,7 +473,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 preds[:,:,i+1] = next_tokens.reshape(batch_size, nr_preds)
 
                 # End loop when all sequences have end token
-                if torch.all(torch.logical_or(next_token == self.end_token_id, next_token == self.pad_token_id)):
+                if torch.all(torch.logical_or(next_tokens == self.end_token_id, next_tokens == self.pad_token_id)):
                     break
 
             return preds
@@ -524,7 +524,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 preds[:,i+1] = next_tokens.squeeze(1)
 
                 # End loop when all sequences have end token
-                if torch.all(torch.logical_or(next_token == self.end_token_id, next_token == self.pad_token_id)):
+                if torch.all(torch.logical_or(next_tokens == self.end_token_id, next_tokens == self.pad_token_id)):
                     break
 
             return preds
@@ -579,7 +579,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 preds[:,i+1] = next_tokens.squeeze(1)
 
                 # End loop when all sequences have end token
-                if torch.all(torch.logical_or(next_token == self.end_token_id, next_token == self.pad_token_id)):
+                if torch.all(torch.logical_or(next_tokens == self.end_token_id, next_tokens == self.pad_token_id)):
                     break
 
             return preds
