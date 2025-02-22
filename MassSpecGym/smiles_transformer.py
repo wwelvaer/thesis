@@ -687,7 +687,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             path_lengths = torch.full((batch_size,beam_width,), 1, device=self.device)
             log_prob_sums = torch.full((batch_size,beam_width,), 0.0, device=self.device)
 
-            logprobs_stopped_seq = torch.full((self.vocab_size,), float('-inf'))
+            logprobs_stopped_seq = torch.full((self.vocab_size,), float('-inf'), device=self.device)
             logprobs_stopped_seq[self.pad_token_id] = 0
 
             for i in range(max_len - 1):
