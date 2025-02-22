@@ -153,6 +153,11 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         
 
     def step(self, batch: dict, stage: Stage = Stage.NONE) -> dict:
+        if stage == Stage('train'):
+            self.train()
+        else:
+            self.eval()
+
         # Forward pass
         smiles_pred, smiles = self.forward(batch)
         # Compute loss
@@ -162,6 +167,8 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         if stage in self.log_only_loss_at_stages:
             mols_pred = None
         else:
+            # Alway put model in eval mode for sampling
+            self.eval()
             if self.sampler == "naive":
                 mols_pred = self.decode_smiles(batch)
             elif self.sampler == "naive-parallel":
@@ -644,7 +651,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
     def _decode_step(self, memory, preds, batch_size, nr_preds, i):
         last_tokens = preds[:,:,:i+1].reshape(batch_size * nr_preds, i+1).T # (batch_size, nr_preds, seq_length) to (seq_length, batch_size * nr_preds)
         tgt = self.tgt_embedding(last_tokens)
-        tgt_mask = self.transformer.generate_square_subsequent_mask(tgt.size(0))#.to(src.device)
+        tgt_mask = self.transformer.generate_square_subsequent_mask(tgt.size(0)).to(self.device)
         out = self.transformer.decoder(tgt, memory, tgt_mask=tgt_mask)
         out = self.tgt_decoder(out[-1, :]) # (batch_size * nr_preds, vocab_size)
         return out
