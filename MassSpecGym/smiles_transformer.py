@@ -408,7 +408,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         return decoded_smiles_str
 
     def decode_smiles_top_q_parallel(self, batch):
-        decoded_smiles = self.top_q_decode(
+        decoded_smiles = self.top_q_decode_parallel(
                                 batch,
                                 nr_preds=self.k_predictions,
                                 max_len=self.max_smiles_len,
@@ -697,6 +697,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             logprobs_stopped_seq = torch.full((self.vocab_size,), float('-inf'), device=self.device)
             logprobs_stopped_seq[self.pad_token_id] = 0
 
+
             for i in range(max_len - 1):
                 logits = self._decode_step(memory, preds, batch_size, beam_width, i)
                 # Compute probabilities
@@ -729,8 +730,53 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
 
                 # End loop when all sequences have end token
                 if torch.all(torch.logical_or(next_tokens == self.end_token_id, next_tokens == self.pad_token_id)):
-                    break
+                    return preds[:,:nr_preds], i+1
             
             # Select top nr_preds paths from preds
-            return preds[:,:nr_preds], i
-        
+            return preds[:,:nr_preds], max_len
+
+    def top_q_decode_parallel(self, batch, nr_preds, max_len, temperature, q):
+        with torch.inference_mode():
+            spec = self.scale_spec_batch(batch)    # (batch_size, seq_len, in_dim)
+            batch_size = spec.shape[0]
+            memory = self._encode_spec(spec, nr_preds)
+
+            # tensor that holds predicted tokens for each prediction
+            preds = torch.full((batch_size, nr_preds, max_len), self.pad_token_id, device=self.device)
+            preds[:,:,0] = self.start_token_id
+
+            stopped = torch.full((batch_size, nr_preds), False)
+
+            for i in range(max_len - 1):
+                logits = self._decode_step(memory, preds, batch_size, nr_preds, i)
+
+                ### Top-q sampling
+                # Scale logits wrt temperature
+                scaled_logits = logits / temperature if temperature != None else logits
+                probs = F.softmax(scaled_logits, dim=-1)
+
+                ## Apply top-q filtering
+                # Select top-q tokens
+                sorted_probs, sorted_indices = torch.sort(probs, dim=-1, descending=True)
+                top_q = torch.cumsum(sorted_probs, dim=-1) < q
+                # label for which sum prob exceeds q should be selected aswell
+                top_q[torch.arange(top_q.shape[0]),top_q.to(torch.int16).argmin(dim=-1)] = True
+
+                # Set logits for unselected tokens to -inf
+                mask = torch.full_like(probs, float('-inf'))
+                mask.scatter_(dim=-1, index=sorted_indices, src=sorted_probs.where(top_q, float('-inf')))
+                
+                # Compute probabilities
+                topq_probs = F.softmax(mask, dim=-1)
+
+                # Sample from the adjusted distribution
+                next_tokens = torch.multinomial(topq_probs, num_samples=1).reshape(batch_size, nr_preds) # (batch_size, nr_preds)
+                
+                # store values
+                preds[:,:,i+1] = torch.where(stopped, self.pad_token_id, next_tokens)
+                stopped = torch.logical_or(stopped, next_tokens == self.end_token_id)
+
+                if torch.all(stopped):
+                    return preds, i+1
+
+            return preds, max_len
