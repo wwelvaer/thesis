@@ -259,7 +259,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 'temp': self.temperature,
             }
 
-            self.save_metadata(f'meta_data/Naive_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
+            self.save_metadata(f'meta_data/Naive_parallel_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
             
         return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
 
@@ -438,7 +438,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 'q': self.q
             }
 
-            self.save_metadata(f'meta_data/TopQ_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
+            self.save_metadata(f'meta_data/TopQ_parallel_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
         
         return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
 
