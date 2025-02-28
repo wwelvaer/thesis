@@ -221,7 +221,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         decoded_smiles_str = list(map(list, zip(*decoded_smiles_str)))
 
         if self.store_metadata:
-            self.save_metadata(f'NAIVE_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
+            self.save_metadata(f'meta_data/NAIVE_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
 
         return decoded_smiles_str
 
@@ -408,13 +408,26 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         return decoded_smiles_str
 
     def decode_smiles_top_q_parallel(self, batch):
-        decoded_smiles = self.top_q_decode_parallel(
+        decoded_smiles, i = self.top_q_decode_parallel(
                                 batch,
                                 nr_preds=self.k_predictions,
                                 max_len=self.max_smiles_len,
                                 temperature=self.temperature,
                                 q=self.q
             )
+        
+        if self.store_metadata:
+            meta_data = {
+                'forward_passes': i,
+                'prediction_lengths': [
+                    [x.index(self.end_token_id) if self.end_token_id in x else self.max_smiles_len for x in b] for b in decoded_smiles.tolist()
+                ],
+                'temp': self.temperature,
+                'q': self.q
+            }
+
+            self.save_metadata(f'meta_data/NAIVE_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
+        
         return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
 
     def top_k_decode(self, batch, nr_preds, max_len, temperature, k):
@@ -745,7 +758,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             preds = torch.full((batch_size, nr_preds, max_len), self.pad_token_id, device=self.device)
             preds[:,:,0] = self.start_token_id
 
-            stopped = torch.full((batch_size, nr_preds), False)
+            stopped = torch.full((batch_size, nr_preds), False, device=self.device)
 
             for i in range(max_len - 1):
                 logits = self._decode_step(memory, preds, batch_size, nr_preds, i)
