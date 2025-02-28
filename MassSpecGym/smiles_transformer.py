@@ -243,12 +243,24 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         return str(int(Decimal(a) * (10 ** (p-1)))) + "e" + str(int(b)-(p-1))
 
     def decode_smiles_parallel(self, batch):
-        decoded_smiles = self.naive_decode_parallel(
+        decoded_smiles, i = self.naive_decode_parallel(
                                 batch,
                                 nr_preds=self.k_predictions,
                                 max_len=self.max_smiles_len,
                                 temperature=self.temperature
             )
+
+        if self.store_metadata:
+            meta_data = {
+                'forward_passes': i,
+                'prediction_lengths': [
+                    [x.index(self.end_token_id) if self.end_token_id in x else self.max_smiles_len for x in b] for b in decoded_smiles.tolist()
+                ],
+                'temp': self.temperature,
+            }
+
+            self.save_metadata(f'meta_data/Naive_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
+            
         return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
 
     def naive_decode(self, batch, max_len, temperature):
@@ -290,7 +302,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             out_tokens = out_tokens.permute(1, 0)  # (batch_size, seq_len)
             return out_tokens
 
-    def naive_decode_parallel(self, batch, nr_preds, max_len, temperature):
+    def _naive_decode_parallel(self, batch, nr_preds, max_len, temperature):
         with torch.inference_mode():
             spec = self.scale_spec_batch(batch)    # (batch_size, seq_len, in_dim)
             batch_size = spec.shape[0]
@@ -426,7 +438,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 'q': self.q
             }
 
-            self.save_metadata(f'meta_data/NAIVE_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
+            self.save_metadata(f'meta_data/TopQ_metadata_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
         
         return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
 
@@ -784,6 +796,38 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
 
                 # Sample from the adjusted distribution
                 next_tokens = torch.multinomial(topq_probs, num_samples=1).reshape(batch_size, nr_preds) # (batch_size, nr_preds)
+                
+                # store values
+                preds[:,:,i+1] = torch.where(stopped, self.pad_token_id, next_tokens)
+                stopped = torch.logical_or(stopped, next_tokens == self.end_token_id)
+
+                if torch.all(stopped):
+                    return preds, i+1
+
+            return preds, max_len
+
+    def naive_decode_parallel(self, batch, nr_preds, max_len, temperature):
+        with torch.inference_mode():
+            spec = self.scale_spec_batch(batch)    # (batch_size, seq_len, in_dim)
+            batch_size = spec.shape[0]
+            memory = self._encode_spec(spec, nr_preds)
+
+            # tensor that holds predicted tokens for each prediction
+            preds = torch.full((batch_size, nr_preds, max_len), self.pad_token_id, device=self.device)
+            preds[:,:,0] = self.start_token_id
+
+            stopped = torch.full((batch_size, nr_preds), False, device=self.device)
+
+            for i in range(max_len - 1):
+                logits = self._decode_step(memory, preds, batch_size, nr_preds, i)
+
+                ### Naive sampling
+                # Scale logits wrt temperature
+                scaled_logits = logits / temperature if temperature != None else logits
+                probs = F.softmax(scaled_logits, dim=-1)
+
+                # Sample from the adjusted distribution
+                next_tokens = torch.multinomial(probs, num_samples=1).reshape(batch_size, nr_preds) # (batch_size, nr_preds)
                 
                 # store values
                 preds[:,:,i+1] = torch.where(stopped, self.pad_token_id, next_tokens)
