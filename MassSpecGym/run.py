@@ -99,17 +99,21 @@ parser.add_argument('--k_predictions', type=int, default=10)
 parser.add_argument('--pre_norm', type=bool, default=False)
 parser.add_argument('--temperature', type=float, default=1)
 parser.add_argument('--smiles_tokenizer', choices=['smiles_bpe', 'selfies'], default='smiles_bpe')
-parser.add_argument('--full_selfies_vocab', default=False)
+parser.add_argument('--full_selfies_vocab', action='store_true')
 parser.add_argument('--use_chemical_formula', action='store_true')
 
-parser.add_argument('--sampler', choices=['greedy', 'top-k', 'top-k-parallel', 'top-q-parallel'], default='greedy')
+parser.add_argument('--sampler', choices=["naive", "naive-parallel", "top-k", "top-k-parallel", "top-q",  "top-q-parallel", "beam-search"], default='naive')
 parser.add_argument('--k', type=int, default=50)
 parser.add_argument('--mz_scaling', type=bool, default=False)
 parser.add_argument('--patience', type=int, default=0)
 parser.add_argument('--embedding_norm', type=bool, default=False)
 parser.add_argument('--q', type=float, default='0.8')
+parser.add_argument('--beam_width', type=int, default='20')
+parser.add_argument('--alpha', type=float, default='1.0')
+parser.add_argument('--store_metadata', action='store_true')
 
 def main(args):
+    print(args)
     # Seed everything
     pl.seed_everything(args.seed)
 
@@ -220,6 +224,9 @@ def main(args):
                 q=args.q,
                 mz_scaling=args.mz_scaling,
                 embedding_norm=args.embedding_norm,
+                beam_width = args.beam_width,
+                alpha = args.alpha,
+                store_metadata = args.store_metadata,
                 **common_kwargs
             )
         else:
@@ -238,9 +245,16 @@ def main(args):
             df_test_path=args.df_test_pth
         )
         model.sampler = args.sampler
+        model.k_predictions = args.k_predictions
+        print(type(model), model.sampler)
         model.k = args.k
         model.q = args.q
         model.temperature = args.temperature
+        model.beam_width = args.beam_width
+        model.alpha = args.alpha
+        print(args.store_metadata)
+        print(args.full_selfies_vocab)
+        model.store_metadata = args.store_metadata
 
     # Init logger
     if args.no_wandb:
@@ -303,6 +317,7 @@ def main(args):
     
     model.log_only_loss_at_stages = [Stage("train")]
     trainer.validate(model, datamodule=data_module)
+    model.log_only_loss_at_stages = args.log_only_loss_at_stages
 
     # Test
     trainer.test(model, datamodule=data_module)

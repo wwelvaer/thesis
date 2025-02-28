@@ -8,6 +8,7 @@ lightning_logs
 massSpecGymTest
 
 *.h5t
+*.ckpt
 
 *.e[0-9]*
 *.o[0-9]*
