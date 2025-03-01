@@ -373,7 +373,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         decoded_smiles_str = list(map(list, zip(*decoded_smiles_str)))
 
         if self.store_metadata:
-            self.save_metadata(f'TopK_metadata_k-{self.k}_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
+            self.save_metadata(f'meta_data/TopK_metadata_k-{self.k}_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
 
         return decoded_smiles_str
 
@@ -412,7 +412,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             meta_data['prediction_lengths'].append([x.index(self.end_token_id) if self.end_token_id in x else -1 for x in decoded_smiles])
 
         if self.store_metadata:
-            self.save_metadata(f'TopQ_metadata_q-{self.sanitize_decimal(self.q, 2)}_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
+            self.save_metadata(f'meta_data/TopQ_metadata_q-{self.sanitize_decimal(self.q, 2)}_temp-{self.sanitize_decimal(self.temperature, 2)}', meta_data)
 
         # Transpose from (nr_preds, batch_size) to (batch_size, nr_preds)
         decoded_smiles_str = list(map(list, zip(*decoded_smiles_str)))
@@ -696,7 +696,7 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 'beam_width': self.beam_width,
                 'alpha': self.alpha
             }
-            self.save_metadata(f'BeamSearch_bw-{self.beam_width}_alpha-{self.sanitize_decimal(self.alpha, 2)}', meta_data)
+            self.save_metadata(f'meta_data/BeamSearch_bw-{self.beam_width}_alpha-{self.sanitize_decimal(self.alpha, 2)}', meta_data)
 
         return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
 
