@@ -207,7 +207,9 @@ def main(args):
             else:
                 with open(args.smiles_tokenizer, 'rb') as file:
                     smiles_tokenizer = pickle.load(file)
-                
+
+            max_smiles_len = 200 if 'smiles' in args.smiles_tokenizer.lower() else 150
+
             model = SmilesTransformer(
                 input_dim=args.input_dim,
                 d_model=args.d_model,
