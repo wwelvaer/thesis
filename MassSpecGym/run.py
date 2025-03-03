@@ -23,9 +23,10 @@ from massspecgym.models.retrieval import (
     FingerprintFFNRetrieval, FromDictRetrieval, RandomRetrieval, DeepSetsRetrieval
 )
 #from massspecgym.models.de_novo import SmilesTransformer
-from thesis.MassSpecGym.smiles_transformer import SmilesTransformer
+from smiles_transformer import SmilesTransformer
 from massspecgym.models.tokenizers import SmilesBPETokenizer, SelfiesTokenizer
 from massspecgym.definitions import MASSSPECGYM_TEST_RESULTS_DIR
+
 
 # Suppress RDKit warnings and errors
 lg = RDLogger.logger()
