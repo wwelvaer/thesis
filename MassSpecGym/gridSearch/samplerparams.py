@@ -8,18 +8,18 @@ model_name = "SMILES_LOW_VAL_LOSS"
 
 extra_params = [
  ("smiles_tokenizer", "smiles_bpe"),
- ("full_selfies_vocab", ""),
+ #("full_selfies_vocab", ""),
  ("store_metadata", ""),
- ("k_predictions", 1)
+ #("k_predictions", 1)
 ]
 
 hyperparams = {
-    "temperature": [1.0],#[0.7, 0.9, 1.0, 1.1, 1.3, 1.5],
+    "temperature": [0.1, 0.2, 0.3, 0.4],
     "k": [3],# 5, 10, 20, 50],
-    "q": [0.7, 0.8, 0.9, 0.95, 0.99],
-    "beam_width": [1],
-    "alpha": [1.0],
-    "sampler": ["beam-search"]#, "top-k", "top-q"]
+    "q": [0.8],#[0.7, 0.8, 0.9, 0.95, 0.99],
+    "beam_width": [10, 20, 30],
+    "alpha": [1.0, 10, 20, 50],
+    "sampler": ["naive-parallel"]#, "top-k", "top-q"]
 }
 
 samplers = hyperparams["sampler"]
@@ -28,6 +28,7 @@ samplers_allowed_params = {
     "naive-parallel": ["temperature"],
     "top-k": ["temperature", "k"],
     "top-q": ["temperature", "q"],
+    "top-q-parallel": ["temperature", "q"],
     "beam-search": ["beam_width", "alpha"]
 }
 

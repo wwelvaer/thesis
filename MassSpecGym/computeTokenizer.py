@@ -4,7 +4,7 @@ import pickle
 
 import sys
 
-cache_dir = "~/scratch_kyukon/cache"
+cache_dir = "cache"
 
 def main():
     # Ensure exactly 2 arguments are provided (excluding the script name)
