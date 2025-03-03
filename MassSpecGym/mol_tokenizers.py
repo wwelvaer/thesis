@@ -135,7 +135,7 @@ class SelfiesTokenizer(SpecialTokensBaseTokenizer):
 
 
 class SmilesBPETokenizer(SpecialTokensBaseTokenizer):
-    def __init__(self, dataset_size: int=4, smiles_pth: T.Optional[str] = None, cache_dir=None **kwargs):
+    def __init__(self, dataset_size: int=4, smiles_pth: T.Optional[str] = None, cache_dir=None, **kwargs):
         """
         Initialize the BPE tokenizer for SMILES strings, with optional training data.
 
