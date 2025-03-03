@@ -4,6 +4,8 @@ import pickle
 
 import sys
 
+cache_dir = "~/scratch_kyukon/cache"
+
 def main():
     # Ensure exactly 2 arguments are provided (excluding the script name)
     if len(sys.argv) != 3:
@@ -27,7 +29,7 @@ def main():
         sys.exit(1)
     
     if representation == "smiles":
-        tokenizer = SmilesBPETokenizer(dataset_size=dataset_size, max_len=200)
+        tokenizer = SmilesBPETokenizer(dataset_size=dataset_size, max_len=200, cache_dir=cache_dir)
     
     # store tokenizer
     filename = f"tokenizers/{representation}_tokenizer_{dataset_size}M.pkl"

@@ -39,7 +39,7 @@ def load_massspecgym(fold: T.Optional[str] = None) -> pd.DataFrame:
     return df
 
 
-def load_unlabeled_mols(col_name: str = "smiles", size: int = 4) -> pd.Series:
+def load_unlabeled_mols(col_name: str = "smiles", size: int = 4, cache_dir=None) -> pd.Series:
     """
     Load a list of unlabeled molecules.
 
@@ -56,7 +56,7 @@ def load_unlabeled_mols(col_name: str = "smiles", size: int = 4) -> pd.Series:
     assert size in datasets.keys(), f"Unknown dataset size {size}, valid sizes: {datasets.keys()}"
     print(f"Fetching: {datasets[size]}")
     return pd.read_csv(
-        hugging_face_download(datasets[size]),
+        hugging_face_download(datasets[size], cache_dir=cache_dir),
         sep="\t"
     )[col_name]
 
@@ -205,7 +205,7 @@ def smiles_to_inchi_key(mol: str, twod: bool = True) -> str:
     return mol_to_inchi_key(mol, twod)
 
 
-def hugging_face_download(file_name: str) -> str:
+def hugging_face_download(file_name: str, cache_dir=None) -> str:
     """
     Download a file from the Hugging Face Hub and return its location on disk.
     
@@ -216,6 +216,7 @@ def hugging_face_download(file_name: str) -> str:
         repo_id="roman-bushuiev/MassSpecGym",
         filename="data/" + file_name,
         repo_type="dataset",
+        cache_dir=cache_dir,
     )
 
 
