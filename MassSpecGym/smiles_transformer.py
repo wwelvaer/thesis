@@ -831,9 +831,10 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
                 
                 # store values
                 preds[:,:,i+1] = torch.where(stopped, self.pad_token_id, next_tokens)
-                stopped = torch.logical_or(stopped, next_tokens == self.end_token_id)
+                stopped[next_tokens == self.end_token_id] = True
 
                 if torch.all(stopped):
                     return preds, i+1
 
             return preds, max_len
+
