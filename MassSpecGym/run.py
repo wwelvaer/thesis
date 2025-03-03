@@ -7,6 +7,8 @@ from rdkit import RDLogger
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+import os.path
+import pickle
 
 import numpy as np
 print(np.version.version)
@@ -98,7 +100,7 @@ parser.add_argument('--dropout', type=float, default=0.1)
 parser.add_argument('--k_predictions', type=int, default=10)
 parser.add_argument('--pre_norm', type=bool, default=False)
 parser.add_argument('--temperature', type=float, default=1)
-parser.add_argument('--smiles_tokenizer', choices=['smiles_bpe', 'selfies'], default='smiles_bpe')
+parser.add_argument('--smiles_tokenizer', default='tokenizers/smiles_tokenizer_4M.pkl')
 parser.add_argument('--full_selfies_vocab', action='store_true')
 parser.add_argument('--use_chemical_formula', action='store_true')
 
@@ -199,14 +201,12 @@ def main(args):
             raise NotImplementedError(f"Model {args.model} not implemented.")
     elif args.task == 'de_novo':
         if args.model == 'smiles_transformer':
-            if args.smiles_tokenizer == 'smiles_bpe':
-                max_smiles_len = 200
-                smiles_tokenizer = SmilesBPETokenizer(max_len=max_smiles_len)
-            elif args.smiles_tokenizer == 'selfies':
-                max_smiles_len = 150
-                smiles_tokenizer = SelfiesTokenizer(max_len=max_smiles_len, selfies_train=("semantic_robust_alphabet" if args.full_selfies_vocab else None))
+            if not os.path.isfile(args.smiles_tokenizer):
+                raise FileNotFoundError(f"Tokenizer {args.smiles_tokenizer} not found")
             else:
-                raise NotImplementedError(f"Tokenizer {args.smiles_tokenizer} not implemented")
+                with open(args.smiles_tokenizer, 'rb') as file:
+                    smiles_tokenizer = pickle.load(file)
+                
             model = SmilesTransformer(
                 input_dim=args.input_dim,
                 d_model=args.d_model,
