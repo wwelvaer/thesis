@@ -135,7 +135,7 @@ class SelfiesTokenizer(SpecialTokensBaseTokenizer):
 
 
 class SmilesBPETokenizer(SpecialTokensBaseTokenizer):
-    def __init__(self, dataset_size: int=4, smiles_pth: T.Optional[str] = None, cache_dir=None, **kwargs):
+    def __init__(self, dataset_size: int=4, smiles_pth: T.Optional[str] = None, cache_dir=None, vocab_size=30000, **kwargs):
         """
         Initialize the BPE tokenizer for SMILES strings, with optional training data.
 
@@ -150,6 +150,10 @@ class SmilesBPETokenizer(SpecialTokensBaseTokenizer):
             smiles = utils.load_unlabeled_mols(col_name="smiles", size=dataset_size, cache_dir=cache_dir).tolist()
             smiles += utils.load_train_mols().tolist()
             print(f"Training tokenizer on {len(smiles)} SMILES strings.")
-            tokenizer.train_from_iterator(smiles)
+            tokenizer.train_from_iterator(smiles, vocab_size)
 
         super().__init__(tokenizer, **kwargs)
+
+# TODO
+#class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
+    
