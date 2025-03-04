@@ -30,8 +30,6 @@ def main():
         print("Error: dataset_size and vocab_size must be integers.")
         sys.exit(1)
 
-    assert False
-
 
     if representation == "smiles":
         tokenizer = SmilesBPETokenizer(dataset_size=dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=vocab_size)
