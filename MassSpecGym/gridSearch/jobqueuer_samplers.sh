@@ -18,7 +18,7 @@ python3 samplerparams.py | while IFS= read -r line; do
         cat <<EOF > $job_script
 #!/bin/bash
 #PBS -N $JOBNAME
-#PBS -l walltime=12:00:00
+#PBS -l walltime=6:00:00
 #PBS -l gpus=1
 #PBS -l mem=32gb
 
