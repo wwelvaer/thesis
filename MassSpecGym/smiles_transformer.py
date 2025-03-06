@@ -681,7 +681,15 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         out = self.tgt_decoder(out[-1, :]) # (batch_size * nr_preds, vocab_size)
         return out
 
-    def decode_smiles_beam_search(self, batch):
+    def dummy_decode_step(self, memory, preds, batch_size, nr_preds, i):
+        last_tokens = preds[:,:,i] # (batch_size, nr_preds, seq_length) to (seq_length, batch_size * nr_preds)
+        fake_logits = torch.full((last_tokens.shape[1], self.vocab_size), 0, dtype=float).to(device=self.device)
+        for j in range(1, 11):
+            fake_logits[torch.arange(fake_logits.shape[0]),(last_tokens+j) % (self.vocab_size-2)] = 10-j
+
+        return fake_logits
+
+    def decode_smiles_beam_search(self, batch): # For testing purposes
         decoded_smiles, i = self.decode_beam_search(
                                 batch,
                                 nr_preds=self.k_predictions,
@@ -713,23 +721,21 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             # tensor that holds predicted tokens for each prediction
             preds = torch.full((batch_size, beam_width, max_len), self.start_token_id, device=self.device)
 
-            # Tensor that holds for each path if it is still generating (True) or finished (False)
-            #path_still_generating = torch.full((batch_size*beam_width), True, device=self.device)
-
             path_lengths = torch.full((batch_size,beam_width,), 1, device=self.device)
             log_prob_sums = torch.full((batch_size,beam_width,), 0.0, device=self.device)
 
             logprobs_stopped_seq = torch.full((self.vocab_size,), float('-inf'), device=self.device)
             logprobs_stopped_seq[self.pad_token_id] = 0
 
-
             for i in range(max_len - 1):
                 logits = self._decode_step(memory, preds, batch_size, beam_width, i)
+                
                 # Compute probabilities
                 logprobs = F.log_softmax(logits, dim=-1) # (beam_width * batch_size, vocab_size)
 
                 _paths = path_lengths.reshape(beam_width*batch_size).unsqueeze(1) # (beam_width * batch_size, 1)
                 _prev_sums = log_prob_sums.reshape(beam_width*batch_size).unsqueeze(1) # (beam_width * batch_size, 1)
+
                 logprobs = torch.where(_paths == (i+1), logprobs, logprobs_stopped_seq) # Force stopped sequences to padding tokens
                 newlogprobsums = logprobs + _prev_sums
                 scores = calculate_score(newlogprobsums, _paths)
@@ -737,7 +743,10 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
 
                 for b in range(batch_size):
                     # Coordinates of (number of beamwidth) highest scores
-                    top_args = scores[b*beam_width:(b+1)*beam_width].flatten().argsort(descending=True)[:beam_width]
+                    if i == 0: # Start with only one node
+                        top_args = scores[b*beam_width].flatten().argsort(descending=True)[:beam_width]
+                    else:
+                        top_args = scores[b*beam_width:(b+1)*beam_width].flatten().argsort(descending=True)[:beam_width]
                     rows = torch.div(top_args, self.vocab_size, rounding_mode="floor")
                     token_ids = torch.remainder(top_args, self.vocab_size)
                     
