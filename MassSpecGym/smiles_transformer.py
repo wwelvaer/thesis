@@ -66,6 +66,11 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         self.beam_width = beam_width
         self.alpha = alpha
 
+        if sampler == "greedy":
+            self.k_predictions = 1
+            self.beam_width = 1
+            self.sampler = "beam-search"
+
         self.store_metadata = store_metadata
 
         self.input_dim = input_dim

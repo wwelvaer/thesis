@@ -32,9 +32,12 @@ def main():
 
     if representation == "smiles":
         tokenizer = SmilesBPETokenizer(dataset_size=dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=vocab_size)
-    
+        filename = f"tokenizers/{representation}_tokenizer_{dataset_size}M_vocab_{vocab_size}.pkl"
+    else:
+        tokenizer = SelfiesTokenizer(max_len=150)
+        filename = f"tokenizers/{representation}_tokenizer.pkl"
+
     # store tokenizer
-    filename = f"tokenizers/{representation}_tokenizer_{dataset_size}M_vocab_{vocab_size}.pkl"
     with open(filename, 'wb') as f:
         pickle.dump(tokenizer, f)
 
