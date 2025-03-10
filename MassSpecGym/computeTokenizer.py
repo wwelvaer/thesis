@@ -1,5 +1,5 @@
 from smiles_transformer import SmilesTransformer
-from mol_tokenizers import SmilesBPETokenizer
+from mol_tokenizers import SmilesBPETokenizer, SelfiesTokenizer, SelfiesBPETokenizer
 import pickle
 
 import sys
@@ -30,12 +30,15 @@ def main():
         print("Error: dataset_size and vocab_size must be integers.")
         sys.exit(1)
 
-    if representation == "smiles":
+    if representation == "smiles_bpe":
         tokenizer = SmilesBPETokenizer(dataset_size=dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=vocab_size)
         filename = f"tokenizers/{representation}_tokenizer_{dataset_size}M_vocab_{vocab_size}.pkl"
-    else:
+    elif representation == "selfies":
         tokenizer = SelfiesTokenizer(max_len=150)
         filename = f"tokenizers/{representation}_tokenizer.pkl"
+    elif representation == "selfies_bpe":
+        tokenizer = SelfiesBPETokenizer(max_len=150, min_frequency=10)
+        filename = f"tokenizers/{representation}_tokenizer_{dataset_size}M_vocab_{vocab_size}.pkl"
 
     # store tokenizer
     with open(filename, 'wb') as f:

@@ -1,11 +1,11 @@
 import pandas as pd
 import typing as T
 import selfies as sf
-from tokenizers import ByteLevelBPETokenizer
 from tokenizers import Tokenizer, processors, models, pre_tokenizers
-from tokenizers.implementations import BaseTokenizer, ByteLevelBPETokenizer
+from tokenizers.implementations import BaseTokenizer, ByteLevelBPETokenizer, CharBPETokenizer
 import utils as utils
 from massspecgym.definitions import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN
+import string
 
 
 class SpecialTokensBaseTokenizer(BaseTokenizer):
@@ -202,51 +202,55 @@ class SmilesTokenizer(SpecialTokensBaseTokenizer):
         """Converts a WordLevel string back to a SMILES string."""
         return text.replace(" ", "")
 
-# TODO fix
 class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
-    def __init__(self, dataset_size: int=4, cache_dir=None, vocab_size=30000, **kwargs):
+    def __init__(self, dataset_size: int=4, cache_dir=None, vocab_size=30000, min_frequency=2, **kwargs):
         """
         Initialize the BPE tokenizer for SELFIES strings
         """
-        tokenizer = ByteLevelBPETokenizer()
+        tokenizer = CharBPETokenizer()
 
         smiles = utils.load_train_mols().tolist()
-        #smiles += utils.load_unlabeled_mols(col_name="smiles", size=dataset_size, cache_dir=cache_dir).tolist()
 
         print(f"Converting {len(smiles)} SMILES strings to SELFIES strings")
-        selfies_tokens = [
-            sf.split_selfies(sf.encoder(s, strict=False)) for s in smiles
-        ]
+        selfies_strings = [sf.encoder(s, strict=False) for s in smiles]
 
         print(f"Calculating SELFIES token to byte mapping")
-        unique_selfies_tokens = sorted(set([y for x in selfies_tokens for y in x]))
-        print(unique_selfies_tokens)
-        start_code = 0xE000  # starting code point in Private Use Area
+        unique_selfies_tokens = list(sorted(sf.get_alphabet_from_selfies(selfies_strings)))
+
+        unlabaled_smiles = utils.load_unlabeled_mols(col_name="smiles", size=dataset_size, cache_dir=cache_dir).tolist()
+        print(f"Converting {len(unlabaled_smiles)} SMILES strings to SELFIES strings")
+        selfies_strings += [sf.encoder(s, strict=False) for s in unlabaled_smiles]
+
+        printable_chars = string.printable.strip()  # Removes whitespace characters
+        # Ensure there are enough characters to map each word uniquely
+        if len(unique_selfies_tokens) > len(printable_chars):
+            raise ValueError(f"Not enough unique characters to map each word. Tyring to use {len(unique_selfies_tokens)} while only {len(printable_chars)} are available")
+
         self.selfies_to_byte = {}
         self.byte_to_selfies = {}
+        self.vocab = []
 
         for i, token in enumerate(unique_selfies_tokens):
-            char = chr(start_code + i)
+            char = printable_chars[i]
             self.selfies_to_byte[token] = char
             self.byte_to_selfies[char] = token
-        
-        print(self.selfies_to_byte)
+            self.vocab.append(char)
             
-        print(f"Converting SELFIES tokens from {len(selfies_tokens)} SELFIES strings to single byte")
-        byte_tokens = ["".join([self.selfies_to_byte[t] for t in s]) for s in selfies_tokens]
+        print(f"Converting SELFIES tokens from {len(selfies_strings)} SELFIES strings to single byte")
+        byte_strings = [self._encode_selfies_to_byte_str(s) for s in selfies_strings if all([t in self.selfies_to_byte for t in sf.split_selfies(s)])]
+    
 
-        print(f"Training tokenizer on {len(selfies_tokens)} compressed SELFIES strings.")
-        tokenizer.train_from_iterator(byte_tokens, vocab_size)
+        print(f"Training tokenizer on {len(byte_strings)} compressed SELFIES strings.")
+        tokenizer.train_from_iterator(byte_strings, vocab_size, min_frequency=min_frequency, suffix="", special_tokens=[])
 
         super().__init__(tokenizer, **kwargs)
 
     def encode(self, text: str, add_special_tokens: bool = True) -> Tokenizer:
         """Encodes a SMILES string into a list of byte SELFIES token IDs."""
         selfies_string = sf.encoder(text, strict=False)
-        selfies_tokens = list(sf.split_selfies(selfies_string))
-        byte_tokens = [self.selfies_to_byte[t] for t in selfies_tokens]
+        byte_str = self._encode_selfies_to_byte_str(selfies_string)
         return super().encode(
-            byte_tokens, is_pretokenized=True, add_special_tokens=add_special_tokens
+            byte_str, add_special_tokens=add_special_tokens
         )
 
     def decode(self, token_ids: T.List[int], skip_special_tokens: bool = True) -> str:
@@ -254,7 +258,7 @@ class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
         byte_string = super().decode(
             token_ids, skip_special_tokens=skip_special_tokens
         )
-        selfies_string = _decode_byte_str_to_selfies(byte_string)
+        selfies_string = self._decode_byte_str_to_selfies(byte_string)
         return sf.decoder(selfies_string)
 
     def encode_batch(
@@ -290,3 +294,8 @@ class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
     def _decode_byte_str_to_selfies(self, text: str) -> str:
         """Converts a byte string back to a SELFIES string."""
         return "".join([self.byte_to_selfies[b] for b in list(text)])
+
+    def _encode_selfies_to_byte_str(self, selfies_str: str) -> str:
+        """Converts a SELFIES string back to a byte string."""
+        return "".join([self.selfies_to_byte[t] for t in sf.split_selfies(selfies_str)])
+    
