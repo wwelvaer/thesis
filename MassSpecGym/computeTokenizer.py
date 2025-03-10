@@ -18,8 +18,9 @@ def main():
     vocab_size_str = sys.argv[3]
     
     # Validate the representation
-    if representation not in ["smiles", "selfies"]:
-        print("Error: representation must be 'smiles' or 'selfies'.")
+    valid_representations = ["smiles", "selfies", "selfies_bpe"]
+    if representation not in valid_representations:
+        print(f"Error: representation must be in {valid_representations}.")
         sys.exit(1)
     
     # Validate and convert dataset_size to an integer
