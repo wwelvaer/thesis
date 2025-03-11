@@ -143,8 +143,9 @@ class SmilesBPETokenizer(SpecialTokensBaseTokenizer):
         if smiles_pth:
             tokenizer.train(smiles_pth)
         else:
-            smiles = utils.load_unlabeled_mols(col_name="smiles", size=dataset_size, cache_dir=cache_dir).tolist()
-            smiles += utils.load_train_mols().tolist()
+            #smiles = utils.load_unlabeled_mols(col_name="smiles", size=dataset_size, cache_dir=cache_dir).tolist()
+            print("TEST")
+            smiles = utils.load_train_mols().tolist()
             print(f"Training tokenizer on {len(smiles)} SMILES strings.")
             tokenizer.train_from_iterator(smiles, vocab_size)
 
@@ -207,7 +208,7 @@ class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
         """
         Initialize the BPE tokenizer for SELFIES strings
         """
-        tokenizer = CharBPETokenizer()
+        tokenizer = ByteLevelBPETokenizer()
 
         smiles = utils.load_train_mols().tolist()
 
@@ -241,7 +242,7 @@ class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
     
 
         print(f"Training tokenizer on {len(byte_strings)} compressed SELFIES strings.")
-        tokenizer.train_from_iterator(byte_strings, vocab_size, min_frequency=min_frequency, suffix="", special_tokens=[])
+        tokenizer.train_from_iterator(byte_strings, vocab_size, min_frequency=min_frequency, special_tokens=[])
 
         super().__init__(tokenizer, **kwargs)
 
@@ -258,7 +259,9 @@ class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
         byte_string = super().decode(
             token_ids, skip_special_tokens=skip_special_tokens
         )
+        print(byte_string)
         selfies_string = self._decode_byte_str_to_selfies(byte_string)
+        print(selfies_string)
         return sf.decoder(selfies_string)
 
     def encode_batch(
