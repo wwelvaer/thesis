@@ -8,7 +8,7 @@ cache_dir = "cache"
 
 def main():
     # Ensure exactly 3 arguments are provided (excluding the script name)
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 5:
         print("Error: Two arguments are required: representation and dataset_size.")
         sys.exit(1)
     
@@ -16,6 +16,7 @@ def main():
     representation = sys.argv[1].lower()
     dataset_size_str = sys.argv[2]
     vocab_size_str = sys.argv[3]
+    encoded_selfies_path = sys.argv[4]
     
     # Validate the representation
     valid_representations = ["smiles", "selfies", "selfies_bpe"]
@@ -38,8 +39,8 @@ def main():
         tokenizer = SelfiesTokenizer(max_len=150)
         filename = f"tokenizers/{representation}_tokenizer.pkl"
     elif representation == "selfies_bpe":
-        tokenizer = SelfiesBPETokenizer(max_len=150, min_frequency=10, vocab_size=vocab_size)
-        filename = f"tokenizers/{representation}_tokenizer_{dataset_size}M_vocab_{vocab_size}.pkl"
+        tokenizer = SelfiesBPETokenizer(max_len=150, min_frequency=10, encoded_selfies=encoded_selfies_path, vocab_size=vocab_size)
+        filename = f"tokenizers/{representation}_tokenizer_{dataset_size}M_vocab_{tokenizer.get_vocab_size()}.pkl"
 
     # store tokenizer
     with open(filename, 'wb') as f:
