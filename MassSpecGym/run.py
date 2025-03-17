@@ -105,7 +105,7 @@ parser.add_argument('--smiles_tokenizer', default='tokenizers/smiles_tokenizer_4
 parser.add_argument('--full_selfies_vocab', action='store_true')
 parser.add_argument('--use_chemical_formula', action='store_true')
 
-parser.add_argument('--sampler', choices=["naive", "naive-parallel", "top-k", "top-k-parallel", "top-q",  "top-q-parallel", "beam-search"], default='naive')
+parser.add_argument('--sampler', type=str, default='naive')
 parser.add_argument('--k', type=int, default=50)
 parser.add_argument('--mz_scaling', type=bool, default=False)
 parser.add_argument('--patience', type=int, default=0)

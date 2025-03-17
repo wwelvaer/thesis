@@ -203,7 +203,7 @@ class SmilesTokenizer(SpecialTokensBaseTokenizer):
         return text.replace(" ", "")
 
 class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
-    def __init__(self, dataset_size: int=4, cache_dir=None, vocab_size=30000, min_frequency=2, **kwargs):
+    def __init__(self, dataset_size: int=4, encoded_selfies=None, cache_dir=None, vocab_size=30000, min_frequency=2, **kwargs):
         """
         Initialize the BPE tokenizer for SELFIES strings
         """
@@ -216,10 +216,6 @@ class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
 
         print(f"Calculating SELFIES token to byte mapping")
         unique_selfies_tokens = list(sorted(sf.get_alphabet_from_selfies(selfies_strings)))
-
-        unlabaled_smiles = utils.load_unlabeled_mols(col_name="smiles", size=dataset_size, cache_dir=cache_dir).tolist()
-        print(f"Converting {len(unlabaled_smiles)} SMILES strings to SELFIES strings")
-        selfies_strings += [sf.encoder(s, strict=False) for s in unlabaled_smiles]
 
         printable_chars = string.printable.strip()  # Removes whitespace characters
         # Ensure there are enough characters to map each word uniquely
@@ -235,13 +231,22 @@ class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
             self.selfies_to_byte[token] = char
             self.byte_to_selfies[char] = token
             self.vocab.append(char)
-            
-        print(f"Converting SELFIES tokens from {len(selfies_strings)} SELFIES strings to single byte")
-        byte_strings = [self._encode_selfies_to_byte_str(s) for s in selfies_strings if all([t in self.selfies_to_byte for t in sf.split_selfies(s)])]
-    
 
-        print(f"Training tokenizer on {len(byte_strings)} compressed SELFIES strings.")
-        tokenizer.train_from_iterator(byte_strings, vocab_size, min_frequency=min_frequency, special_tokens=[])
+        if encoded_selfies is None:
+            unlabaled_smiles = utils.load_unlabeled_mols(col_name="smiles", size=dataset_size, cache_dir=cache_dir).tolist()
+            print(f"Converting {len(unlabaled_smiles)} SMILES strings to SELFIES strings")
+            selfies_strings += [sf.encoder(s, strict=False) for s in unlabaled_smiles]
+        
+            print(f"Converting SELFIES tokens from {len(selfies_strings)} SELFIES strings to single byte")
+            with open("encoded_selfies.txt", "w") as file:
+                for s in selfies_strings:
+                    if all([t in self.selfies_to_byte for t in sf.split_selfies(s)]):
+                        enc = self._encode_selfies_to_byte_str(s)
+                        file.write(enc + "\n")
+            print("Encoded selfies written to encoded_selfies.txt")
+
+        print(f"Training tokenizer")
+        tokenizer.train("encoded_selfies.txt" if encoded_selfies is None else encoded_selfies, vocab_size, min_frequency=min_frequency, special_tokens=[])
 
         super().__init__(tokenizer, **kwargs)
 
