@@ -39,7 +39,7 @@ def main():
         tokenizer = SelfiesTokenizer(max_len=150)
         filename = f"tokenizers/{representation}_tokenizer.pkl"
     elif representation == "selfies_bpe":
-        tokenizer = SelfiesBPETokenizer(max_len=150, min_frequency=10, encoded_selfies=encoded_selfies_path, vocab_size=vocab_size)
+        tokenizer = SelfiesBPETokenizer(max_len=150, encoded_selfies=encoded_selfies_path, vocab_size=vocab_size)
         filename = f"tokenizers/{representation}_tokenizer_{dataset_size}M_vocab_{tokenizer.get_vocab_size()}.pkl"
 
     # store tokenizer
