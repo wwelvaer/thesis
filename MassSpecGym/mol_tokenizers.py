@@ -6,6 +6,7 @@ from tokenizers.implementations import BaseTokenizer, ByteLevelBPETokenizer, Cha
 import utils as utils
 from massspecgym.definitions import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN
 import string
+import deepsmiles as ds
 
 
 class SpecialTokensBaseTokenizer(BaseTokenizer):
@@ -144,7 +145,7 @@ class SmilesBPETokenizer(SpecialTokensBaseTokenizer):
             tokenizer.train(smiles_pth)
         else:
             smiles = utils.load_unlabeled_mols(col_name="smiles", size=dataset_size, cache_dir=cache_dir).tolist()
-            smiles = utils.load_train_mols().tolist()
+            smiles += utils.load_train_mols().tolist()
             print(f"Training tokenizer on {len(smiles)} SMILES strings.")
             tokenizer.train_from_iterator(smiles, vocab_size)
 
@@ -218,6 +219,8 @@ class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
         unique_selfies_tokens = list(sorted(sf.get_alphabet_from_selfies(selfies_strings)))
 
         printable_chars = string.printable.strip()  # Removes whitespace characters
+        printable_chars = [c for c in printable_chars if not (c in ['"', "'", "\\", '`'])] # Filter unstable characters
+
         # Ensure there are enough characters to map each word uniquely
         if len(unique_selfies_tokens) > len(printable_chars):
             raise ValueError(f"Not enough unique characters to map each word. Tyring to use {len(unique_selfies_tokens)} while only {len(printable_chars)} are available")
@@ -303,4 +306,49 @@ class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
     def _encode_selfies_to_byte_str(self, selfies_str: str) -> str:
         """Converts a SELFIES string back to a byte string."""
         return "".join([self.selfies_to_byte[t] for t in sf.split_selfies(selfies_str)])
-    
+
+class DeepSmilesBPETokenizer(SpecialTokensBaseTokenizer):
+    def __init__(self, dataset_size: int=4, deepsmiles_pth: T.Optional[str] = None, cache_dir=None, vocab_size=30000, **kwargs):
+        """
+        Initialize the BPE tokenizer for SMILES strings, with optional training data.
+        """
+        self.converter = ds.Converter(rings=True, branches=True)
+
+        tokenizer = ByteLevelBPETokenizer()
+        if deepsmiles_pth:
+            tokenizer.train(deepsmiles_pth)
+        else:
+            smiles = utils.load_train_mols().tolist()
+
+            if dataset_size > 0:
+                smiles += utils.load_unlabeled_mols(col_name="smiles", size=dataset_size, cache_dir=cache_dir).tolist()
+
+            print(f"Converting {len(smiles)} SMILES to DeepSMILES strings.")
+            deepsmiles = [self.converter.encode(s) for s in smiles]
+
+            print(f"Training tokenizer on {len(deepsmiles)} DeepSMILES strings.")
+            tokenizer.train_from_iterator(deepsmiles, vocab_size)
+
+        super().__init__(tokenizer, **kwargs)
+
+    def encode(self, smiles: str) -> Tokenizer:
+        """Encodes a SMILES string into a list of DeepSMILES token IDs."""
+        deepsmiles_str = self.converter.encode(smiles)
+        return super().encode(deepsmiles_str)
+
+    def decode(self, token_ids: T.List[int]) -> str:
+        """Decodes a list of DeepSMILES token IDs back into a SMILES string."""
+        deepsmiles_str = super().decode(token_ids)
+        return self.converter.decode(deepsmiles_str)
+
+    def encode_batch(self, smiles: T.List[str]) -> T.List[Tokenizer]:
+        """Encodes a batch of SMILES strings into a list of DeepSMILES token IDs."""
+        deepsmiles_strings = [self.converter.encode(s) for s in smiles]
+        return super().encode_batch(deepsmiles_strings)
+
+    def decode_batch(
+        self, token_ids_batch: T.List[T.List[int]], skip_special_tokens: bool = True
+    ) -> T.List[str]:
+        """Decodes a batch of DeepSMILES token IDs back into SMILES strings."""
+        deepsmiles_strings = super().decode_batch(token_ids_batch)
+        return [self.converter.decode(s) for s in deepsmiles_strings]
