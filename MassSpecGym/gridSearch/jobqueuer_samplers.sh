@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROJECT="SamplersGridSearch"
+PROJECT="HPC" #"SamplersGridSearch"
 
 ml load CUDA-Python/12.1.0-gfbf-2023a-CUDA-12.1.1
 
@@ -18,7 +18,7 @@ python3 samplerparams.py | while IFS= read -r line; do
         cat <<EOF > $job_script
 #!/bin/bash
 #PBS -N $JOBNAME
-#PBS -l walltime=6:00:00
+#PBS -l walltime=4:00:00
 #PBS -l gpus=1
 #PBS -l mem=32gb
 
