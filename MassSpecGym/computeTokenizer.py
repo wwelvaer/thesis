@@ -7,16 +7,18 @@ import sys
 cache_dir = "cache"
 
 def main():
-    # Ensure exactly 3 arguments are provided (excluding the script name)
-    if len(sys.argv) != 5:
-        print("Error: Two arguments are required: representation and dataset_size.")
+    # Ensure at least 3 arguments are provided (excluding the script name)
+    if len(sys.argv) < 3:
+        print("Error: 2 Arguments are required: representation and dataset_size.")
         sys.exit(1)
     
     # Get the arguments and process them
     representation = sys.argv[1].lower()
     dataset_size_str = sys.argv[2]
-    vocab_size_str = sys.argv[3]
-    encoded_selfies_path = sys.argv[4]
+    if len(sys.argv) > 3:
+        vocab_size_str = sys.argv[3]
+    if len(sys.argv) > 4:
+        encoded_selfies_path = sys.argv[4]
     
     # Validate the representation
     valid_representations = ["smiles", "selfies", "selfies_bpe"]
