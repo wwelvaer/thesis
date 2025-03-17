@@ -15,10 +15,8 @@ def main():
     # Get the arguments and process them
     representation = sys.argv[1].lower()
     dataset_size_str = sys.argv[2]
-    if len(sys.argv) > 3:
-        vocab_size_str = sys.argv[3]
-    if len(sys.argv) > 4:
-        encoded_selfies_path = sys.argv[4]
+    vocab_size_str = sys.argv[3] if len(sys.argv) > 3 else None
+    encoded_selfies_path = sys.argv[4] if len(sys.argv) > 4 else None
     
     # Validate the representation
     valid_representations = ["smiles", "selfies", "selfies_bpe"]
@@ -29,7 +27,7 @@ def main():
     # Validate and convert dataset_size to an integer
     try:
         dataset_size = int(dataset_size_str)
-        vocab_size = int(vocab_size_str)
+        vocab_size = int(vocab_size_str) if vocab_size_str is not None else None
     except ValueError:
         print("Error: dataset_size and vocab_size must be integers.")
         sys.exit(1)
