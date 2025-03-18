@@ -339,7 +339,7 @@ class DeepSmilesBPETokenizer(SpecialTokensBaseTokenizer):
     def decode(self, token_ids: T.List[int]) -> str:
         """Decodes a list of DeepSMILES token IDs back into a SMILES string."""
         deepsmiles_str = super().decode(token_ids)
-        return self.converter.decode(deepsmiles_str)
+        return self.try_deepsmiles_to_smiles(deepsmiles_str)
 
     def encode_batch(self, smiles: T.List[str]) -> T.List[Tokenizer]:
         """Encodes a batch of SMILES strings into a list of DeepSMILES token IDs."""
@@ -351,4 +351,11 @@ class DeepSmilesBPETokenizer(SpecialTokensBaseTokenizer):
     ) -> T.List[str]:
         """Decodes a batch of DeepSMILES token IDs back into SMILES strings."""
         deepsmiles_strings = super().decode_batch(token_ids_batch)
-        return [self.converter.decode(s) for s in deepsmiles_strings]
+        return [self.try_deepsmiles_to_smiles(s) for s in deepsmiles_strings]
+
+    def try_deepsmiles_to_smiles(self, deepsmiles: str) -> str:
+        try:
+            smiles = self.converter.decode(deepsmiles)
+        except:
+            smiles = ""
+        return smiles
