@@ -3,6 +3,7 @@ from mol_tokenizers import SmilesBPETokenizer, SelfiesTokenizer, SelfiesBPEToken
 import pickle
 
 import sys
+import os
 
 cache_dir = "cache"
 
@@ -27,6 +28,8 @@ def main():
     except ValueError:
         print("Error: dataset_size, vocab_size and min_frequency must be integers.")
         sys.exit(1)
+
+    os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
     if representation == "smiles_bpe":
         tokenizer = SmilesBPETokenizer(dataset_size=dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=vocab_size, min_frequency=min_frequency)
