@@ -17,8 +17,9 @@ def main():
     representation = sys.argv[1].lower()
     dataset_size_str = sys.argv[2]
     vocab_size_str = sys.argv[3] if len(sys.argv) > 3 else None
-    encoded_selfies_path = sys.argv[4] if len(sys.argv) > 4 else None
-    min_frequency_str = sys.argv[5] if len(sys.argv) > 5 else None
+    min_frequency_str = sys.argv[4] if len(sys.argv) > 4 else None
+    encoded_selfies_path = sys.argv[5] if len(sys.argv) > 5 else None
+    
     
     # Validate and convert dataset_size to an integer
     try:
