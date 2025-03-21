@@ -12,24 +12,27 @@ extra_params = [
 
 tokenizers = {
     "models/smiles_transformer_paper.ckpt": "tokenizers/smiles_tokenizer_4M.pkl",
+    "models/smiles_paper_mz_shift_augmentation_1.ckpt": "tokenizers/smiles_tokenizer_4M.pkl",
+    "models/smiles_paper_mz_shift_augmentation_2e-1.ckpt": "tokenizers/smiles_tokenizer_4M.pkl",
     "models/smiles_paper_118M_tokenizer_bs512.ckpt": "tokenizers/smiles_tokenizer_118M.pkl",
     "models/smiles_paper_limvocab_118Mtokenizer.ckpt": "tokenizers/smiles_tokenizer_118M_vocab_5200.pkl",
     "models/smiles_paper_no_augmentation_BPE_tokenizer.ckpt": "tokenizers/smiles_no_augmentation_BPE_tokenizer.pkl",
     "models/smiles_paper_bytelevel_tokenizer.ckpt": "tokenizers/smiles_bytelevel_tokenizer.pkl",
-    "models/selfies_paper.ckpt": "tokenizers/selfies_tokenizer.pkl"
+    "models/selfies_paper.ckpt": "tokenizers/selfies_tokenizer.pkl",
+    "models/deepSmiles_paper.ckpt": "tokenizers/deepsmiles_bpe_tokenizer_4M_vocab_9962.pkl"
 }
 
 
 job_prefix = ""
 
 hyperparams = {
-    "temperature": [1.0],# 0.6, 0.7],
+    "temperature": [0.6, 0.8, 0.9, 1.0, 1.1],# 0.6, 0.7],
     "k": [3, 10, 50],# 5, 10, 20, 50],
     "q": [0.95],#[0.7, 0.8, 0.9, 0.95, 0.99],
     "beam_width": [20],
     "alpha": [1.0],
     "sampler": ["naive-parallel"],#["top-q-parallel"],#, "top-k", "top-q"]
-    "checkpoint_pth": ["models/selfies_paper.ckpt"] # ["models/smiles_paper_no_augmentation_BPE_tokenizer.ckpt", "models/smiles_paper_bytelevel_tokenizer.ckpt", "models/smiles_transformer_paper.ckpt", "models/smiles_paper_118M_tokenizer_bs512.ckpt", "models/smiles_paper_limvocab_118Mtokenizer.ckpt"] #["models/smiles_augmented_1.ckpt", "models/smiles_augmented_2.ckpt", "models/smiles_augmented_5.ckpt"]
+    "checkpoint_pth": ["models/deepSmiles_paper.ckpt"] # ["models/smiles_paper_no_augmentation_BPE_tokenizer.ckpt", "models/smiles_paper_bytelevel_tokenizer.ckpt", "models/smiles_transformer_paper.ckpt", "models/smiles_paper_118M_tokenizer_bs512.ckpt", "models/smiles_paper_limvocab_118Mtokenizer.ckpt"] #["models/smiles_augmented_1.ckpt", "models/smiles_augmented_2.ckpt", "models/smiles_augmented_5.ckpt"]
 }
 
 samplers = hyperparams["sampler"]
