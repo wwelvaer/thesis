@@ -4,13 +4,6 @@ import pickle
 
 import sys
 
-import os
-
-# Force the progress bar to show regardless of TTY detection.
-os.environ["CARGO_TERM_PROGRESS_WHEN"] = "always"
-# Set the progress bar width to 80 columns.
-os.environ["CARGO_TERM_PROGRESS_WIDTH"] = "80"
-
 cache_dir = "cache"
 
 def main():
@@ -36,13 +29,13 @@ def main():
         sys.exit(1)
 
     if representation == "smiles_bpe":
-        tokenizer = SmilesBPETokenizer(dataset_size=dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=vocab_size)
+        tokenizer = SmilesBPETokenizer(dataset_size=dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=vocab_size, min_frequency=min_frequency)
         filename = f"tokenizers/{representation}_tokenizer_{dataset_size}M_vocab_{tokenizer.get_vocab_size()}.pkl"
     elif representation == "selfies":
         tokenizer = SelfiesTokenizer(max_len=150)
         filename = f"tokenizers/{representation}_tokenizer.pkl"
     elif representation == "selfies_bpe":
-        tokenizer = SelfiesBPETokenizer(max_len=150, encoded_selfies=encoded_selfies_path, vocab_size=vocab_size, min_frequency=min_frequency)
+        tokenizer = SelfiesBPETokenizer(max_len=150, encoded_selfies=encoded_selfies_path, min_frequency=min_frequency, vocab_size=vocab_size)
         filename = f"tokenizers/{representation}_tokenizer_{dataset_size}M_vocab_{tokenizer.get_vocab_size()}.pkl"
     elif representation == "deepsmiles_bpe":
         tokenizer = DeepSmilesBPETokenizer(dataset_size=dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=vocab_size)
