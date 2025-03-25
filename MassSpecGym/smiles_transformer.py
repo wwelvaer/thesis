@@ -66,11 +66,6 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
         self.beam_width = beam_width
         self.alpha = alpha
 
-        if sampler == "greedy":
-            self.k_predictions = 1
-            self.beam_width = 1
-            self.sampler = "beam-search"
-
         self.store_metadata = store_metadata
 
         self.input_dim = input_dim
@@ -187,6 +182,10 @@ class SmilesTransformer(DeNovoMassSpecGymModel):
             elif self.sampler == "top-q-parallel":
                 mols_pred = self.decode_smiles_top_q_parallel(batch)
             elif self.sampler == "beam-search":
+                mols_pred = self.decode_smiles_beam_search(batch)
+            elif self.sampler == "greedy":
+                self.k_predictions = 1
+                self.beam_width = 1
                 mols_pred = self.decode_smiles_beam_search(batch)
             else:
                 raise "unkown decoder"
