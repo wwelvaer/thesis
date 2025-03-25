@@ -301,11 +301,11 @@ class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
 
     def _decode_byte_str_to_selfies(self, text: str) -> str:
         """Converts a byte string back to a SELFIES string."""
-        return "".join([self.byte_to_selfies[b] for b in list(text)])
+        return "".join([self.byte_to_selfies[b] if b in self.byte_to_selfies else "" for b in list(text)])
 
     def _encode_selfies_to_byte_str(self, selfies_str: str) -> str:
         """Converts a SELFIES string back to a byte string."""
-        return "".join([self.selfies_to_byte[t] for t in sf.split_selfies(selfies_str)])
+        return "".join([self.selfies_to_byte[t] if t in self.selfies_to_byte else self.unk_token for t in sf.split_selfies(selfies_str)])
 
 class DeepSmilesBPETokenizer(SpecialTokensBaseTokenizer):
     def __init__(self, dataset_size: int=4, deepsmiles_pth: T.Optional[str] = None, cache_dir=None, vocab_size=30000, **kwargs):
