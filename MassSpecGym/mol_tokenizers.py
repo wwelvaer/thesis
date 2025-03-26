@@ -7,6 +7,8 @@ import utils as utils
 from massspecgym.definitions import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN
 import string
 import deepsmiles as ds
+from concurrent.futures import ThreadPoolExecutor
+import rdkit.Chem as Chem
 
 
 class SpecialTokensBaseTokenizer(BaseTokenizer):
@@ -133,7 +135,6 @@ class SelfiesTokenizer(SpecialTokensBaseTokenizer):
     def _decode_wordlevel_str_to_selfies(self, text: str) -> str:
         """Converts a WordLevel string back to a SELFIES string."""
         return text.replace(" ", "")
-
 
 class SmilesBPETokenizer(SpecialTokensBaseTokenizer):
     def __init__(self, dataset_size: int=4, smiles_pth: T.Optional[str] = None, cache_dir=None, vocab_size=30000, min_frequency=2, **kwargs):
@@ -356,6 +357,68 @@ class DeepSmilesBPETokenizer(SpecialTokensBaseTokenizer):
     def try_deepsmiles_to_smiles(self, deepsmiles: str) -> str:
         try:
             smiles = self.converter.decode(deepsmiles)
+        except:
+            smiles = ""
+        return smiles
+
+
+class InchIBPETokenizer(SpecialTokensBaseTokenizer):
+    def __init__(self, dataset_size: int=4, inchi_pth: T.Optional[str] = None, cache_dir=None, vocab_size=30000, **kwargs):
+        """
+        Initialize the BPE tokenizer for InchI strings, with optional training data.
+        """
+
+        tokenizer = ByteLevelBPETokenizer()
+        if inchi_pth:
+            tokenizer.train(inchi_pth)
+        else:
+            smiles = utils.load_train_mols().tolist()
+
+            if dataset_size > 0:
+                smiles += utils.load_unlabeled_mols(col_name="smiles", size=dataset_size, cache_dir=cache_dir).tolist()
+
+            print(f"Converting {len(smiles)} SMILES to InchI strings.")
+            self.unk_token = UNK_TOKEN
+            inchis = []
+
+            for i, s in enumerate(smiles):
+                inchis.append(self.smiles_to_inchi(s))
+                if i % (len(smiles) // 1000) == 0:
+                    print("Conversion:\t{}% Complete".format(round(i / len(smiles) * 100, 2)), end = "\r", flush = True)
+
+            print(f"Training tokenizer on {len(inchis)} InchI strings.")
+            tokenizer.train_from_iterator(inchis, vocab_size)
+
+        super().__init__(tokenizer, **kwargs)
+
+    def encode(self, smiles: str) -> Tokenizer:
+        """Encodes a SMILES string into a list of InchI token IDs."""
+        return super().encode(self.smiles_to_inchi(smiles))
+
+    def decode(self, token_ids: T.List[int]) -> str:
+        """Decodes a list of InchI token IDs back into a SMILES string."""
+        return self.inchi_to_smiles(super().decode(token_ids))
+
+    def encode_batch(self, smiles: T.List[str]) -> T.List[Tokenizer]:
+        """Encodes a batch of SMILES strings into a list of InchI token IDs."""
+        return super().encode_batch([self.smiles_to_inchi(s) for s in smiles])
+
+    def decode_batch(
+        self, token_ids_batch: T.List[T.List[int]], skip_special_tokens: bool = True
+    ) -> T.List[str]:
+        """Decodes a batch of InchI token IDs back into SMILES strings."""
+        return [self.inchi_to_smiles(s) for s in super().decode_batch(token_ids_batch)]
+
+    def smiles_to_inchi(self, smiles: str) -> str:
+        try:
+            inchi = Chem.inchi.MolToInchi(Chem.MolFromSmiles(smiles))
+        except:
+            inchi = self.unk_token
+        return inchi
+    
+    def inchi_to_smiles(self, inchi: str) -> str:
+        try:
+            smiles = Chem.MolToSmiles(Chem.MolFromInchi(inchi))
         except:
             smiles = ""
         return smiles
