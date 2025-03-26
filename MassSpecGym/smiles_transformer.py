@@ -6,7 +6,7 @@ from torch_geometric.nn import MLP
 from massspecgym.models.tokenizers import SpecialTokensBaseTokenizer
 from massspecgym.data.transforms import MolToFormulaVector
 from massspecgym.models.base import Stage
-from base import DeNovoMassSpecGymModel
+from transformer_base import DeNovoMassSpecGymModel
 from massspecgym.definitions import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN
 import pytorch_lightning as pl
 
