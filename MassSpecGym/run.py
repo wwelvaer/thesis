@@ -215,7 +215,7 @@ def main(args):
                 num_encoder_layers=args.num_encoder_layers,
                 num_decoder_layers=args.num_decoder_layers,
                 dropout=args.dropout,
-                smiles_tokenizer=tokenizer.max_length,
+                smiles_tokenizer=smiles_tokenizer.max_length,
                 k_predictions=args.k_predictions,
                 pre_norm=args.pre_norm,
                 max_smiles_len=max_smiles_len,
