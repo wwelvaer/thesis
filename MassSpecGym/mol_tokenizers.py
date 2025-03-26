@@ -275,7 +275,7 @@ class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
         """Encodes a batch of SMILES strings into a list of byte SELFIES token IDs."""
         byte_tokens = [
             [
-                self.selfies_to_byte[c] for c in 
+                self.selfies_to_byte[c] if c in self.selfies_to_byte else self.unk_token for c in 
                 list(sf.split_selfies(sf.encoder(text, strict=False)))
             ] for text in texts
         ]
