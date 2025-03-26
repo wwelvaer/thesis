@@ -254,7 +254,6 @@ def main(args):
         model.beam_width = args.beam_width
         model.alpha = args.alpha
         print(args.store_metadata)
-        print(args.full_selfies_vocab)
         model.store_metadata = args.store_metadata
 
     # Init logger
