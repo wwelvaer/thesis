@@ -358,7 +358,7 @@ class DeepSmilesBPETokenizer(SpecialTokensBaseTokenizer):
         try:
             smiles = self.converter.decode(deepsmiles)
         except:
-            smiles = ""
+            smiles = None
         return smiles
 
 
@@ -420,5 +420,5 @@ class InchIBPETokenizer(SpecialTokensBaseTokenizer):
         try:
             smiles = Chem.MolToSmiles(Chem.MolFromInchi(inchi))
         except:
-            smiles = ""
+            smiles = None
         return smiles

@@ -80,7 +80,7 @@ class DeNovoMassSpecGymModel(MassSpecGymModel, ABC):
         self._update_metric(
             stage.to_pref() + f"num_non_empty_preds",
             MeanMetric,
-            ([sum([m != "" for m in ms]) for ms in mols_pred],),
+            ([sum([m is not None for m in ms]) for ms in mols_pred],),
             batch_size=len(mols_pred),
         )
 
@@ -126,6 +126,8 @@ class DeNovoMassSpecGymModel(MassSpecGymModel, ABC):
             if mol not in self.mol_2_morgan_fp:
                 self.mol_2_morgan_fp[mol] = morgan_fp(mol, to_np=False)
             return self.mol_2_morgan_fp[mol]
+
+        print(smiles_pred)
 
         # Evaluate top-k metrics
         for top_k in self.top_ks:
