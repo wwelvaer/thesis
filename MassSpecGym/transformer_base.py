@@ -127,8 +127,6 @@ class DeNovoMassSpecGymModel(MassSpecGymModel, ABC):
                 self.mol_2_morgan_fp[mol] = morgan_fp(mol, to_np=False)
             return self.mol_2_morgan_fp[mol]
 
-        print(smiles_pred)
-
         # Evaluate top-k metrics
         for top_k in self.top_ks:
             # Get top-k predicted molecules for each ground-truth sample
