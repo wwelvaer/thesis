@@ -1,9 +1,8 @@
 from smiles_transformer import SmilesTransformer
-from mol_tokenizers import SmilesBPETokenizer, SelfiesTokenizer, SelfiesBPETokenizer, DeepSmilesBPETokenizer
+from mol_tokenizers import SmilesBPETokenizer, SelfiesTokenizer, SelfiesBPETokenizer, DeepSmilesBPETokenizer, LayeredInchIBPETokenizer
 import pickle
 import argparse
 
-import sys
 import os
 
 cache_dir = "cache"
@@ -29,10 +28,13 @@ def main():
         tokenizer = SelfiesTokenizer(max_len=150)
         filename = f"tokenizers/{args.representation}_tokenizer.pkl"
     elif args.representation == "selfies_bpe":
-        tokenizer = SelfiesBPETokenizer(max_len=150, encoded_selfies=encoded_selfies_path, min_frequency=args.min_frequency, vocab_size=args.vocab_size)
+        tokenizer = SelfiesBPETokenizer(max_len=150, encoded_selfies=args.encoded_selfies_path, min_frequency=args.min_frequency, vocab_size=args.vocab_size)
         filename = f"tokenizers/{args.representation}_tokenizer_{args.dataset_size}M_vocab_{tokenizer.get_vocab_size()}.pkl"
     elif args.representation == "deepsmiles_bpe":
         tokenizer = DeepSmilesBPETokenizer(dataset_size=args.dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=args.vocab_size)
+        filename = f"tokenizers/{args.representation}_tokenizer_{args.dataset_size}M_vocab_{tokenizer.get_vocab_size()}.pkl"
+    elif args.representation == "layered_inchi":
+        tokenizer = LayeredInchIBPETokenizer(dataset_size=args.dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=args.vocab_size)
         filename = f"tokenizers/{args.representation}_tokenizer_{args.dataset_size}M_vocab_{tokenizer.get_vocab_size()}.pkl"
     else:
         raise AssertionError("Unknown representation")
