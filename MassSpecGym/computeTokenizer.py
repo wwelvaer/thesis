@@ -35,7 +35,7 @@ def main():
         filename = f"tokenizers/{args.representation}_tokenizer_{args.dataset_size}M_vocab_{tokenizer.get_vocab_size()}.pkl"
     elif args.representation == "layered_inchi":
         tokenizer = LayeredInchIBPETokenizer(dataset_size=args.dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=args.vocab_size)
-        filename = f"tokenizers/{args.representation}_tokenizer_{args.dataset_size}M_vocab_{"-".join(tokenizer.get_vocab_sizes())}.pkl"
+        filename = f"tokenizers/{args.representation}_tokenizer_{args.dataset_size}M_vocab_{"-".join(str(x) for x in tokenizer.get_vocab_sizes())}.pkl"
     else:
         raise AssertionError("Unknown representation")
 
