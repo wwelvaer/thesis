@@ -422,9 +422,7 @@ class InchIBPETokenizer(SpecialTokensBaseTokenizer):
         """Encodes a batch of SMILES strings into a list of InchI token IDs."""
         return super().encode_batch([self.smiles_to_inchi(s) for s in smiles])
 
-    def decode_batch(
-        self, token_ids_batch: T.List[T.List[int]], skip_special_tokens: bool = True
-    ) -> T.List[str]:
+    def decode_batch(self, token_ids_batch: T.List[T.List[int]]) -> T.List[str]:
         """Decodes a batch of InchI token IDs back into SMILES strings."""
         return [self.inchi_to_smiles(s) for s in super().decode_batch(token_ids_batch)]
 
@@ -457,7 +455,7 @@ class LayeredInchIBPETokenizer():
         """
         Initialize the BPE tokenizer for InchI strings, with optional training data.
         """
-
+        self.num_layers = 3
         self.inchi_pattern = re.compile(r"^InChI=1S/([^/]*)/c([^/]*)/h([^/]*)/?.*$")
 
         if inchi_pth:
@@ -485,6 +483,7 @@ class LayeredInchIBPETokenizer():
 
             if i % (len(smiles) // 1000) == 0:
                 print("Conversion:\t{}% Complete".format(round(i / len(smiles) * 100, 2)), end = "\r", flush = True)
+        print("Conversion SMILES to InchI strings Complete")
 
         print(f"Training tokenizer f")
         self.tokenizer_f = DummyBPETokenizer(inchis_f, vocab_size=vocab_size, min_frequency=min_frequency, **kwargs)
@@ -493,10 +492,43 @@ class LayeredInchIBPETokenizer():
         print(f"Training tokenizer h")
         self.tokenizer_h = DummyBPETokenizer(inchis_h, vocab_size=vocab_size, min_frequency=min_frequency, **kwargs)
 
-        self.tokenizers = [tokenizer_f, tokenizer_c, tokenizer_h]
+        self.tokenizers = [self.tokenizer_f, self.tokenizer_c, self.tokenizer_h]
+
+    def get_vocab_sizes(self):
+        return [t.get_vocab_size() for t in self.tokenizers]
+
+    def get_max_lengths(self):
+        return [t.max_length for t in self.tokenizers]
 
     def get_inchi(self, f, c, h):
         return f"InChI=1S/{f}/c{c}/h{h}"
+
+    def encode(self, smiles: str) -> T.List[Tokenizer]:
+        """Encodes a SMILES string into a list of InchI layers each containing token IDs."""
+        inchi = self.smiles_to_inchi(smiles)
+        m = self.inchi_pattern.match(inchi) if inchi else None
+        if m is None:
+            return None
+        layers = m.groups()
+        assert len(layers) == len(self.tokenizers), f"invalid number of layers: {len(layers)}, expected {len(self.tokenizers)}"
+        return [t.encode(s) for s, t in zip(layers, self.tokenizers)]
+
+    def decode(self, token_ids_layers: T.List[T.List[int]]) -> str:
+        """Decodes a list of InchI layers each containing token IDs back into a SMILES string."""
+        assert len(token_ids_layers) == len(self.tokenizers), f"invalid number of layers: {len(token_ids_layers)}, expected {len(self.tokenizers)}"
+        inchi = self.get_inchi(*[t.decode(ids) for ids, t in zip(token_ids_layers, self.tokenizers)])
+        return self.inchi_to_smiles(inchi)
+
+    def encode_batch(self, smiles: T.List[str]) -> T.List[T.List[Tokenizer]]:
+        return [self.encode(s) for s in smiles]
+
+    def decode_batch(self, token_ids_layers_batch: T.List[T.List[T.List[int]]]) -> T.List[str]:
+        """Decodes tensors for each InchI layer containing token IDs back into a SMILES string."""
+        assert len(set([(x.size(0), x.size(1)) for x in token_ids_layers_batch])) == 1, "Layers do not have same batch size or number of predictions"
+        return [
+            [self.decode(x) for x in zip(bl1.tolist(), bl2.tolist(), bl3.tolist())] 
+                for bl1, bl2, bl3 in zip(*token_ids_layers_batch)
+        ]
     
     def smiles_to_inchi(self, smiles: str) -> str:
         try:
