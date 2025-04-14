@@ -1,5 +1,5 @@
 from smiles_transformer import SmilesTransformer
-from mol_tokenizers import SmilesBPETokenizer, SelfiesTokenizer, SelfiesBPETokenizer, DeepSmilesBPETokenizer, LayeredInchIBPETokenizer
+from mol_tokenizers import SmilesTokenizer, SmilesBPETokenizer, SelfiesTokenizer, SelfiesBPETokenizer, DeepSmilesBPETokenizer, LayeredInchIBPETokenizer, DeepSmilesTokenizer
 import pickle
 import argparse
 
@@ -24,6 +24,9 @@ def main():
     if args.representation == "smiles_bpe":
         tokenizer = SmilesBPETokenizer(dataset_size=args.dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=args.vocab_size, min_frequency=args.min_frequency, filterStereochemistry=args.filterStereochemistry)
         filename = f"tokenizers/{args.representation}_tokenizer_{args.dataset_size}M_vocab_{tokenizer.get_vocab_size()}{'_no-stereo' if args.filterStereochemistry else ''}.pkl"
+    elif args.representation == "smiles":
+        tokenizer = SmilesTokenizer(dataset_size=args.dataset_size, max_len=200, cache_dir=cache_dir, filterStereochemistry=args.filterStereochemistry)
+        filename = f"tokenizers/{args.representation}_tokenizer{'_no-stereo' if args.filterStereochemistry else ''}.pkl"
     elif args.representation == "selfies":
         tokenizer = SelfiesTokenizer(max_len=150)
         filename = f"tokenizers/{args.representation}_tokenizer.pkl"
@@ -33,9 +36,12 @@ def main():
     elif args.representation == "deepsmiles_bpe":
         tokenizer = DeepSmilesBPETokenizer(dataset_size=args.dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=args.vocab_size)
         filename = f"tokenizers/{args.representation}_tokenizer_{args.dataset_size}M_vocab_{tokenizer.get_vocab_size()}.pkl"
+    elif args.representation == "deepsmiles":
+        tokenizer = DeepSmilesTokenizer(dataset_size=args.dataset_size, max_len=200, cache_dir=cache_dir)
+        filename = f"tokenizers/{args.representation}_tokenizer.pkl"
     elif args.representation == "layered_inchi":
         tokenizer = LayeredInchIBPETokenizer(dataset_size=args.dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=args.vocab_size)
-        filename = f"tokenizers/{args.representation}_tokenizer_{args.dataset_size}M_vocab_{"-".join(str(x) for x in tokenizer.get_vocab_sizes())}.pkl"
+        filename = f"tokenizers/{args.representation}_tokenizer_{args.dataset_size}M_vocab_{'-'.join(str(x) for x in tokenizer.get_vocab_sizes())}.pkl"
     else:
         raise AssertionError("Unknown representation")
 

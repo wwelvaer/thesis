@@ -172,10 +172,83 @@ class SmilesBPETokenizer(SpecialTokensBaseTokenizer):
             smiles_strings = [Chem.rdmolfiles.MolToSmiles(Chem.MolFromSmiles(s), isomericSmiles=False) for s in smiles_strings]
         return super().encode_batch(smiles_strings)
 
-class SmilesTokenizer(SpecialTokensBaseTokenizer):
-    def __init__(self, **kwargs):
+class DeepSmilesTokenizer(SpecialTokensBaseTokenizer):
+    def __init__(self, dataset_size: int=4, cache_dir=None, **kwargs):
+        self.converter = ds.Converter(rings=True, branches=True)
+
         smiles = utils.load_train_mols().tolist()
-        smiles += utils.load_unlabeled_mols(col_name="smiles", size=4, cache_dir=None).tolist()
+        if dataset_size > 0:
+                smiles += utils.load_unlabeled_mols(col_name="smiles", size=dataset_size, cache_dir=cache_dir).tolist()
+        
+        print(f"Converting {len(smiles)} SMILES to DeepSMILES strings.")
+        deepsmiles = [self.converter.encode(s) for s in smiles]
+
+        vocab = {t: i for i,t in enumerate(set(y for x in deepsmiles for y in list(x)))}
+
+        vocab[UNK_TOKEN] = len(vocab)
+        tokenizer = Tokenizer(models.WordLevel(vocab=vocab, unk_token=UNK_TOKEN))
+    
+        super().__init__(tokenizer, **kwargs)
+
+    def encode(self, smiles: str, add_special_tokens: bool = True) -> Tokenizer:
+        """Encodes a SMILES string into a list of DeepSMILES token IDs."""
+        deepsmiles_str = self.converter.encode(smiles)
+        return super().encode(
+            list(deepsmiles_str), is_pretokenized=True, add_special_tokens=add_special_tokens
+        )
+
+    def decode(self, token_ids: T.List[int], skip_special_tokens: bool = True) -> str:
+        """Decodes a list of DeepSMILES token IDs back into a SMILES string."""
+        deepsmiles_string = super().decode(
+            token_ids, skip_special_tokens=skip_special_tokens
+        )
+        return self.try_deepsmiles_to_smiles(self._decode_wordlevel_str_to_deepsmiles(deepsmiles_string))
+
+    def encode_batch(
+        self, smiles: T.List[str], add_special_tokens: bool = True
+    ) -> T.List[Tokenizer]:
+        """Encodes a batch of SMILES strings into a list of DeepSMILES token IDs."""
+        deepsmiles_strings = [
+            list(self.converter.encode(s)) for s in smiles
+        ]
+        return super().encode_batch(
+            deepsmiles_strings, is_pretokenized=True, add_special_tokens=add_special_tokens
+        )
+
+    def decode_batch(
+        self, token_ids_batch: T.List[T.List[int]], skip_special_tokens: bool = True
+    ) -> T.List[str]:
+        """Decodes a batch of DeepSMILES token IDs back into SMILES strings."""
+        deepsmiles_strings = super().decode_batch(
+            token_ids_batch, skip_special_tokens=skip_special_tokens
+        )
+        return [
+            self.try_deepsmiles_to_smiles(self._decode_wordlevel_str_to_deepsmiles(deepsmiles_string))
+            for deepsmiles_string in deepsmiles_strings
+        ]
+
+    def _decode_wordlevel_str_to_deepsmiles(self, text: str) -> str:
+        """Converts a WordLevel string back to a SMILES string."""
+        return text.replace(" ", "")
+
+    def try_deepsmiles_to_smiles(self, deepsmiles: str) -> str:
+        try:
+            smiles = self.converter.decode(deepsmiles)
+        except:
+            smiles = None
+        return smiles
+
+class SmilesTokenizer(SpecialTokensBaseTokenizer):
+    def __init__(self, dataset_size: int=4, cache_dir=None, filterStereochemistry=False, **kwargs):
+        self.filterStereochemistry = filterStereochemistry
+        
+        smiles = utils.load_train_mols().tolist()
+        if dataset_size > 0:
+            smiles += utils.load_unlabeled_mols(col_name="smiles", size=dataset_size, cache_dir=cache_dir).tolist()
+
+        if self.filterStereochemistry:
+            print(f"Removing stereochemistry from {len(smiles)} SMILES strings.")
+            smiles = [Chem.rdmolfiles.MolToSmiles(Chem.MolFromSmiles(s), isomericSmiles=False) for s in smiles]
 
         vocab = {t: i for i,t in enumerate(set(y for x in smiles for y in list(x)))}
 
@@ -184,10 +257,12 @@ class SmilesTokenizer(SpecialTokensBaseTokenizer):
     
         super().__init__(tokenizer, **kwargs)
 
-    def encode(self, text: str, add_special_tokens: bool = True) -> Tokenizer:
+    def encode(self, smiles: str, add_special_tokens: bool = True) -> Tokenizer:
         """Encodes a SMILES string into a list of SMILES token IDs."""
+        if self.filterStereochemistry:
+            smiles = self._filter_stereo(smiles)
         return super().encode(
-            list(text), is_pretokenized=True, add_special_tokens=add_special_tokens
+            list(smiles), is_pretokenized=True, add_special_tokens=add_special_tokens
         )
 
     def decode(self, token_ids: T.List[int], skip_special_tokens: bool = True) -> str:
@@ -198,14 +273,15 @@ class SmilesTokenizer(SpecialTokensBaseTokenizer):
         return self._decode_wordlevel_str_to_smiles(smiles_string)
 
     def encode_batch(
-        self, texts: T.List[str], add_special_tokens: bool = True
+        self, smiles_strings: T.List[str], add_special_tokens: bool = True
     ) -> T.List[Tokenizer]:
         """Encodes a batch of SMILES strings into a list of SMILES token IDs."""
-        smiles_strings = [
-            list(text) for text in texts
+        tokens = [
+            list(self._filter_stereo(s) if self.filterStereochemistry else s) 
+                for s in smiles_strings
         ]
         return super().encode_batch(
-            smiles_strings, is_pretokenized=True, add_special_tokens=add_special_tokens
+            tokens, is_pretokenized=True, add_special_tokens=add_special_tokens
         )
 
     def decode_batch(
@@ -223,6 +299,9 @@ class SmilesTokenizer(SpecialTokensBaseTokenizer):
     def _decode_wordlevel_str_to_smiles(self, text: str) -> str:
         """Converts a WordLevel string back to a SMILES string."""
         return text.replace(" ", "")
+    
+    def _filter_stereo(self, smiles:str) -> str:
+        return Chem.rdmolfiles.MolToSmiles(Chem.MolFromSmiles(smiles), isomericSmiles=False)
 
 class SelfiesBPETokenizer(SpecialTokensBaseTokenizer):
     def __init__(self, dataset_size: int=4, encoded_selfies=None, cache_dir=None, vocab_size=30000, min_frequency=2, **kwargs):
