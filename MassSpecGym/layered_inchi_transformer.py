@@ -184,14 +184,14 @@ class LayeredInchiTransformer(DeNovoMassSpecGymModel):
                                 nr_preds=self.k_predictions,
                                 temperature=self.temperature
             )            
-        return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
+        return self.layered_inchi_tokenizer.decode_batch(decoded_smiles)
     
     def decode_smiles_greedy_parallel(self, batch):
         decoded_smiles = self.greedy_decode_parallel(
                                 batch,
                                 nr_preds=self.k_predictions,
             )            
-        return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
+        return self.layered_inchi_tokenizer.decode_batch(decoded_smiles)
 
     def _encode_spec(self, spec, nr_preds):
         # repeat input "beam_width" times for predictions in one decode
