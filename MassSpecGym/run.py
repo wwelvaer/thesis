@@ -207,49 +207,50 @@ def main(args):
         else:
             with open(args.smiles_tokenizer, 'rb') as file:
                 tokenizer = pickle.load(file)
-        if args.model == 'smiles_transformer':
-            model = SmilesTransformer(
-                input_dim=args.input_dim,
-                d_model=args.d_model,
-                nhead=args.nhead,
-                num_encoder_layers=args.num_encoder_layers,
-                num_decoder_layers=args.num_decoder_layers,
-                dropout=args.dropout,
-                smiles_tokenizer=tokenizer,
-                k_predictions=args.k_predictions,
-                pre_norm=args.pre_norm,
-                max_smiles_len=tokenizer.max_length,
-                chemical_formula=args.use_chemical_formula,
-                sampler=args.sampler,
-                temperature=args.temperature,
-                k=args.k,
-                q=args.q,
-                mz_scaling=args.mz_scaling,
-                embedding_norm=args.embedding_norm,
-                beam_width = args.beam_width,
-                alpha = args.alpha,
-                store_metadata = args.store_metadata,
-                **common_kwargs
-            )
-        elif args.model == "layered_inchi_transformer":
-            model = LayeredInchiTransformer(
-                input_dim=args.input_dim,
-                d_model=args.d_model,
-                nhead=args.nhead,
-                num_encoder_layers=args.num_encoder_layers,
-                num_decoder_layers=args.num_decoder_layers,
-                dropout=args.dropout,
-                layered_inchi_tokenizer=tokenizer,
-                temperature=args.temperature,
-                k_predictions=args.k_predictions,
-                pre_norm=args.pre_norm,
-                sampler=args.sampler,
-                mz_scaling=args.mz_scaling,
-                embedding_norm=args.embedding_norm,
-                **common_kwargs
-            )
-        else:
-            raise NotImplementedError(f"Model {args.model} not implemented.")
+        if args.checkpoint_pth is None:
+            if args.model == 'smiles_transformer':
+                model = SmilesTransformer(
+                    input_dim=args.input_dim,
+                    d_model=args.d_model,
+                    nhead=args.nhead,
+                    num_encoder_layers=args.num_encoder_layers,
+                    num_decoder_layers=args.num_decoder_layers,
+                    dropout=args.dropout,
+                    smiles_tokenizer=tokenizer,
+                    k_predictions=args.k_predictions,
+                    pre_norm=args.pre_norm,
+                    max_smiles_len=tokenizer.max_length,
+                    chemical_formula=args.use_chemical_formula,
+                    sampler=args.sampler,
+                    temperature=args.temperature,
+                    k=args.k,
+                    q=args.q,
+                    mz_scaling=args.mz_scaling,
+                    embedding_norm=args.embedding_norm,
+                    beam_width = args.beam_width,
+                    alpha = args.alpha,
+                    store_metadata = args.store_metadata,
+                    **common_kwargs
+                )
+            elif args.model == "layered_inchi_transformer":
+                model = LayeredInchiTransformer(
+                    input_dim=args.input_dim,
+                    d_model=args.d_model,
+                    nhead=args.nhead,
+                    num_encoder_layers=args.num_encoder_layers,
+                    num_decoder_layers=args.num_decoder_layers,
+                    dropout=args.dropout,
+                    layered_inchi_tokenizer=tokenizer,
+                    temperature=args.temperature,
+                    k_predictions=args.k_predictions,
+                    pre_norm=args.pre_norm,
+                    sampler=args.sampler,
+                    mz_scaling=args.mz_scaling,
+                    embedding_norm=args.embedding_norm,
+                    **common_kwargs
+                )
+            else:
+                raise NotImplementedError(f"Model {args.model} not implemented.")
     else:
         raise NotImplementedError(f"Task {args.task} not implemented.")
 
