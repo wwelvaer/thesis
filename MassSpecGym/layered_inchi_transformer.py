@@ -53,6 +53,7 @@ class LayeredInchiTransformer(DeNovoMassSpecGymModel):
 
         samplers = ["greedy", "naive-parallel"]
         assert sampler in samplers, f"Unknown sampler {sampler}, known samplers: {samplers}"
+        self.sampler = sampler
 
         self.input_dim = input_dim
         self.mz_scaling = mz_scaling
