@@ -161,9 +161,9 @@ class LayeredInchiTransformer(DeNovoMassSpecGymModel):
             # Alway put model in eval mode for sampling
             self.eval()
             if self.sampler == "naive-parallel":
-                mols_pred = self.decode_smiles_parallel(batch)
+                mols_pred = self.decode_smiles_naive_parallel(batch)
             elif self.sampler == "greedy":
-                mols_pred = self.decode_smiles_beam_search(batch)
+                mols_pred = self.decode_smiles_greedy_parallel(batch)
             else:
                 raise "unkown decoder"
         return dict(loss=loss, mols_pred=mols_pred)
@@ -178,11 +178,18 @@ class LayeredInchiTransformer(DeNovoMassSpecGymModel):
         a, b = (f"%.{p-1}E" % Decimal(x)).split("E")
         return str(int(Decimal(a) * (10 ** (p-1)))) + "e" + str(int(b)-(p-1))
 
-    def decode_smiles_parallel(self, batch):
+    def decode_smiles_naive_parallel(self, batch):
         decoded_smiles = self.naive_decode_parallel(
                                 batch,
                                 nr_preds=self.k_predictions,
                                 temperature=self.temperature
+            )            
+        return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
+    
+    def decode_smiles_greedy_parallel(self, batch):
+        decoded_smiles = self.greedy_decode_parallel(
+                                batch,
+                                nr_preds=self.k_predictions,
             )            
         return [self.smiles_tokenizer.decode_batch(b) for b in decoded_smiles.tolist()]
 
