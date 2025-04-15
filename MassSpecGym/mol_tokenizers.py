@@ -564,6 +564,7 @@ class LayeredInchIBPETokenizer():
                 print("Conversion:\t{}% Complete".format(round(i / len(smiles) * 100, 2)), end = "\r", flush = True)
         print("Conversion SMILES to InchI strings Complete")
 
+        
         print(f"Training tokenizer f")
         self.tokenizer_f = DummyBPETokenizer(inchis_f, vocab_size=vocab_size, min_frequency=min_frequency, **kwargs)
         print(f"Training tokenizer c")
@@ -572,6 +573,8 @@ class LayeredInchIBPETokenizer():
         self.tokenizer_h = DummyBPETokenizer(inchis_h, vocab_size=vocab_size, min_frequency=min_frequency, **kwargs)
 
         self.tokenizers = [self.tokenizer_f, self.tokenizer_c, self.tokenizer_h]
+
+        self.max_length = self.tokenizer_f.max_length
 
     def get_vocab_sizes(self):
         return [t.get_vocab_size() for t in self.tokenizers]
