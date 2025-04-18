@@ -1,11 +1,13 @@
 import typing as T
 from abc import ABC
 
+import numpy as np
 import torch
 import pandas as pd
 from rdkit import Chem
 from rdkit.DataStructs import TanimotoSimilarity
 from torchmetrics.aggregation import MeanMetric
+import pickle
 
 from massspecgym.models.base import MassSpecGymModel, Stage
 from massspecgym.utils import morgan_fp, mol_to_inchi_key, MyopicMCES
@@ -17,6 +19,7 @@ class DeNovoMassSpecGymModel(MassSpecGymModel, ABC):
         self,
         top_ks: T.Iterable[int] = (1, 10),
         myopic_mces_kwargs: T.Optional[T.Mapping] = None,
+        train_smiles_path: str="datasets/unique_train_smiles.pkl",
         *args,
         **kwargs
     ):
@@ -28,6 +31,7 @@ class DeNovoMassSpecGymModel(MassSpecGymModel, ABC):
         # caches of already computed results to avoid expensive re-computations
         self.mces_cache = dict()
         self.mol_2_morgan_fp = dict()
+        self.train_smiles_path = train_smiles_path
 
     def on_batch_end(
         self,
@@ -112,6 +116,18 @@ class DeNovoMassSpecGymModel(MassSpecGymModel, ABC):
             ([sum([m is not None for m in ms]) for ms in mols_pred],),
             batch_size=len(mols_pred),
         )
+
+        with open(self.train_smiles_path, 'rb') as f:
+            train_smiles = pickle.load(f)
+        
+        self._update_metric(
+            stage.to_pref() + f"num_novel_mols",
+            MeanMetric,
+            ([sum([p is not None and p not in train_smiles for p in ps]) for ps in smiles_pred],),
+            batch_size=len(mols_pred),
+        )
+
+        del train_smiles
 
         # Get RDKit molecule objects for ground truth
         smile_true = mol_true
