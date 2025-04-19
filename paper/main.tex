@@ -1,0 +1,89 @@
+\documentclass[a4paper, 12pt, twoside, openright, table]{book}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage[labelfont=bf]{caption}
+\usepackage{subcaption,booktabs}
+\usepackage[ruled,noline]{algorithm2e}
+\usepackage[printonlyused,withpage]{acronym}
+\usepackage[sorting=none, style=numeric, backend=biber, natbib]{biblatex}
+
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{setspace}
+\usepackage{fancyhdr}
+\usepackage{pdfpages}
+
+% Packages added to template
+\usepackage{changepage}
+
+% Changed variables
+\setcounter{secnumdepth}{4} % how many sectioning levels to assign numbers to
+\setcounter{tocdepth}{4}    % how many sectioning levels to show in ToC
+
+% useful to make todos
+\usepackage{todonotes}
+
+% you can set the font to calibri, or opensans which closely resembles calibri
+\usepackage{fontspec}
+% \setmainfont{calibri}
+\setmainfont{opensans}
+
+\bibliography{references}
+
+\title{Thesis}
+\author{author}
+\date{Current Year}
+
+% Turn on the style
+\pagestyle{fancy}
+% patch chapter style
+\usepackage{etoolbox}
+\patchcmd{\chapter}{\thispagestyle{plain}}{\thispagestyle{fancy}}{}{}
+
+%\fancyhf{}
+\fancyhead[L]{}
+\fancyhead[R]{\leftmark}
+% Set the right side of the footer to be the page number
+\fancyfoot{}
+\fancyfoot[R]{\thepage}
+
+\geometry{bottom=2.5cm, top=2.5cm, left=2.5cm, right=2.5cm}
+\setstretch{1.5}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\setlength{\headheight}{15pt}
+
+\begin{document}
+\frontmatter
+% plug your own cover page here
+%\includepdf[pages=-]{Cover.pdf}
+% some empty pages
+%\newpage\null\thispagestyle{empty}
+%\newpage\null\thispagestyle{empty}
+%\newpage\null\thispagestyle{empty}
+%\input{Preface}
+
+\tableofcontents
+\listoffigures
+\listoftables
+\input{Acronyms}
+
+\mainmatter
+\input{chapters/background}
+% \input{Abstract}
+% \input{Introduction}
+% \input{Related_work}
+% \input{Aims}
+% \input{Results}
+% \input{Methods}
+% \input{Discussion}
+
+\appendix
+% \input{Appendix}
+
+\printbibliography
+% some empty pages
+%\newpage\null\thispagestyle{empty}
+%\newpage\null\thispagestyle{empty}
+\end{document}

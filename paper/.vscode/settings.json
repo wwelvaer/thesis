@@ -1,0 +1,48 @@
+{
+    // Enable ChkTeX linting
+    "latex-workshop.linting.chktex.enabled": true,
+    // Use the internal PDF viewer (opens in a VS Code tab)
+    "latex-workshop.view.pdf.viewer": "tab",
+    // Control how often the PDF refreshes after builds (ms)
+    "latex-workshop.latex.pdfWatch.delay": 200,
+    // Use LaTeX files in WSL if applicable
+    "latex-workshop.latex.tools": [
+        {
+            "name": "lualatex",
+            "command": "lualatex",
+            "args": [
+              "-synctex=1",
+              "-interaction=nonstopmode",
+              "-file-line-error",
+              "-output-directory=%OUTDIR%",    // place PDF here
+              "-aux-directory=%OUTDIR%",       // place AUX files here (needed on Windows/macOS)
+              "%DOC%"                          // your main.tex
+            ]
+          },
+          {
+            "name": "biber",
+            "command": "biber",
+            "args": [
+              "%DOCFILE%"
+            ]
+          }
+    ],  
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "LuaLaTeX ➞ Biber ➞ LuaLaTeX*2",
+            "tools": [
+              "lualatex",
+              "biber",
+              "lualatex",
+              "lualatex"
+            ]
+          }
+    ],
+    // Build whenever you save
+    "latex-workshop.latex.autoBuild.run": "onSave",
+    // "latex-workshop.latex.autoBuild.cleanAndRetry.enabled": true,
+    "latex-workshop.synctex.afterBuild.enabled": true,
+    "latex-workshop.latex.outDir": "%DIR%/build",
+
+  }
+  
