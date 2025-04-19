@@ -18,8 +18,10 @@ parser.add_argument('--encoded_selfies_path', type=str, required=False, default=
 parser.add_argument('--filterStereochemistry', type=bool, required=False, default=False)
 
 def main():
+    
     args = parser.parse_args([] if "__file__" not in globals() else None)
     os.environ["TOKENIZERS_PARALLELISM"] = "true"
+    print(args)
 
     if args.representation == "smiles_bpe":
         tokenizer = SmilesBPETokenizer(dataset_size=args.dataset_size, max_len=200, cache_dir=cache_dir, vocab_size=args.vocab_size, min_frequency=args.min_frequency, filterStereochemistry=args.filterStereochemistry)
