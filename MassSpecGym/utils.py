@@ -187,10 +187,13 @@ def mol_to_inchi_key(mol: Chem.Mol, twod: bool = True) -> str:
         mol (Chem.Mol): RDKit molecule object.
         twod (bool, optional): Return 2D InChI Key (first 14 characers of InChI Key).
     """
-    inchi_key = Chem.MolToInchiKey(mol)
-    if twod:
-        inchi_key = inchi_key.split("-")[0]
-    return inchi_key
+    try:
+        inchi_key = Chem.MolToInchiKey(mol)
+        if twod:
+            inchi_key = inchi_key.split("-")[0]
+        return inchi_key
+    except:
+        return None
 
 
 def smiles_to_inchi_key(mol: str, twod: bool = True) -> str:

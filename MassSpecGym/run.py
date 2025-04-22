@@ -115,6 +115,7 @@ parser.add_argument('--q', type=float, default='0.8')
 parser.add_argument('--beam_width', type=int, default='20')
 parser.add_argument('--alpha', type=float, default='1.0')
 parser.add_argument('--store_metadata', action='store_true')
+parser.add_argument('--train_smiles_path', type=str, default="")
 
 def main(args):
     print(args)
@@ -273,6 +274,8 @@ def main(args):
         model.alpha = args.alpha
         print(args.store_metadata)
         model.store_metadata = args.store_metadata
+        if args.train_smiles_path:
+            model.train_smiles_path = args.train_smiles_path
 
     # Init logger
     if args.no_wandb:

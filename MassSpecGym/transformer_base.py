@@ -10,7 +10,7 @@ from torchmetrics.aggregation import MeanMetric
 import pickle
 
 from massspecgym.models.base import MassSpecGymModel, Stage
-from massspecgym.utils import morgan_fp, mol_to_inchi_key, MyopicMCES
+from utils import morgan_fp, mol_to_inchi_key, MyopicMCES
 
 
 class DeNovoMassSpecGymModel(MassSpecGymModel, ABC):
