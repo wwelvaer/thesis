@@ -15,7 +15,6 @@
               "-interaction=nonstopmode",
               "-file-line-error",
               "-output-directory=%OUTDIR%",    // place PDF here
-              "-aux-directory=%OUTDIR%",       // place AUX files here (needed on Windows/macOS)
               "%DOC%"                          // your main.tex
             ]
           },
