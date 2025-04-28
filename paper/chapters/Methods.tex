@@ -33,14 +33,38 @@ Several solutions were implemented to combat this problem.
     no positional encodings are added, there is therefor also no need to scale the embedding layer as in the original implementation from \textcite{vaswani2017attention}.
 \end{description}
 
-Removing the embedding scaling was the only method that stabilized the training without lowering performance.
+Removing the embedding scaling was the only method that fully stabilized the training without tanking the performance.
 All models described further therefore share the same model architecture as the MassSpecGym de novo models without the embedding scaling step.
 
 All models were trained on the Ugent HPC accelgor cluster using a singular NVIDIA Ampere A100 GPU.
 Training time without sampling was for every model around 2 hours. 
 
-gridsearch uitleg???
+% Verplaatsen naar results?
+To replicate the results from MassSpecGym, a hyperparameter gridsearch was conducted taking the optimal hyperparameters (= hyperparameters from the model with the lowest validation loss) from the MassSpecGym results into account
+while also extending the search space further than the previously found optimal values.
 
+\begin{table}[h]
+	\caption{
+		Gridsearch MassSpecGym vs Gridsearch from this Thesis (lowest validation loss models in bold)
+	}
+    \resizebox{\textwidth}{!}{
+	\begin{tabular}{p{6cm}W{c}{4cm}W{c}{4cm}}
+		\toprule
+                \textbf{Hyperparams} & \textbf{MassSpecGym} & \textbf{Thesis Gridsearch} \\
+            \midrule
+                Learning Rate & $\mathbf{3\cdot 10^{-4}}, 1\cdot 10^{-4}, 5\cdot 10^{-5}$ & $1\cdot 10^{-3}, 3\cdot 10^{-4}, \mathbf{1\cdot 10^{-4}}$\\
+                Batch Size & $512, \mathbf{1024}$ & $\mathbf{512}, 1024, 2048$ \\
+                $k$ predictions & $\mathbf{10}$ & $\mathbf{10}$ \\
+                Transformer hidden dimensionality & $\mathbf{256}, 512$ & $\mathbf{128}, 256, 512$ \\
+                Number of attention heads & $\mathbf{4}, 8$ & $2, 4, \mathbf{8}$ \\
+                Number of encoding layers & $\mathbf{3}, 6$ & $\mathbf{2}, 3, 4$ \\
+                Number of decoding layers & $\mathbf{4}$ & $2, 3, \mathbf{4}$ \\
+		\midrule
+	\end{tabular}}
+	\label{tab:gridsearch}
+\end{table}
+
+%%
 
 \section{Samplers}
 \label{sec:samplers}
