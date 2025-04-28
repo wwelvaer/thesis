@@ -22,7 +22,8 @@
             "name": "biber",
             "command": "biber",
             "args": [
-              "%DOCFILE%"
+              "--input-directory=%OUTDIR%",  // read .bcf from build/
+              "%DOCFILE%"                    // your main file name without extension
             ]
           }
     ],  

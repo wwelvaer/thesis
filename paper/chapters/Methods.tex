@@ -1,54 +1,25 @@
 \chapter{Methods}
 \label{chap:methods}
 
-\section{Abbreviations and references}
-\label{sec:methods_bwa}
-We can reference abbreviations defined in the list of abbreviations with the ac command \ac{BWA}. On the first use of the abbreviation in the text, the long form will be shown and the abbreviation will be introduced to the reader, if we reference the abbreviation again, the long form is not shown, e.g. \ac{BWA}. We can cite \ac{BWA} with parentheses by using the citep command \citep{10.1093/bioinformatics/btp324}, references are defined in the references.bib file.
+All code used for this thesis can be found on \url{https://github.com/wwelvaer/thesis/tree/main/MassSpecGym}
 
-\subsection{Picture}
+\section{Model Training}
+\label{sec:training}
 
-\begin{figure}
-    \centering
-    \includegraphics[width=0.8\linewidth]{img/picture}
-    \caption{This is a picture.}
-    \label{fig:example}
-\end{figure}
+All models trained for this Thesis follow the de novo model architecture from MassSpecGym~\cite{bushuiev2024massspecgym} closely.
+Most of the model architecture code was heavily inspired by MassSpecGym's source code.
+It uses the pytorch transformer implementation along with a linear layer before and after the transformer to achieve the requested input and output dimensions.
+The training algorithm follows the original transformer implementation from \textcite{vaswani2017attention}.
+The result is a model that predicts the probability distribution of the next token given the peaks of a \ac{MS/MS} spectrum along with an already generated context sequence of tokens.
 
-\subsubsection{Subsubsection}
-This is a subsubsection of \cref{sec:methods_bwa} it references \cref{fig:example}. Numbering of subtitles is limited to 3 levels.
 
-\subsection{Table}
 
-\begin{table}
 
-\begin{subtable}{1\textwidth}
-    \centering
-    \begin{tabular}{l|lllll}
-        row & 1 & 2 & 3 & 4 & 5 \\ \hline
-        other row & 6 & 7 & 8 & 9 & 0 \\ \hline
-        more row & 1 & 2 & 3 & 4 & 5 \\
-    \end{tabular}
-\end{subtable}
+\section{Samplers}
+\label{sec:samplers}
 
-\bigskip
+\section{Augmentation}
+\label{sec:augmentation}
 
-\begin{subtable}{1\textwidth}
-    \centering
-    \begin{tabular}{l|lllll}
-        row & 1 & 2 & 3 & 4 & 5 \\ \hline
-        other row & 6 & 7 & 8 & 9 & 0 \\ \hline
-        more row & 1 & 2 & 3 & 4 & 5 \\
-    \end{tabular}
-\end{subtable}
-
-\caption{This is a table with two subtables.} \label{tab:example}
-
-\end{table}
-
-\section{Lorem Ipsum}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras pharetra molestie ex ac vestibulum. Fusce fringilla, turpis vitae semper auctor, neque justo imperdiet ligula, laoreet ullamcorper odio nulla at urna. Proin in mauris sit amet leo volutpat pharetra. Pellentesque vehicula efficitur commodo. Aliquam convallis vulputate vulputate. Nullam a cursus tortor. Suspendisse auctor eget velit nec scelerisque. Aenean mauris turpis, hendrerit in dapibus condimentum, varius quis diam. Vestibulum ac quam vel urna aliquam faucibus a eget diam. Vivamus at venenatis tellus. Mauris mollis tempor dui, efficitur mattis felis facilisis quis. Aliquam sed facilisis velit.
-
-Praesent consectetur metus vel eros venenatis, at facilisis nunc pharetra. Nulla vel leo tellus. Aenean feugiat, tellus non rhoncus interdum, enim mauris accumsan leo, nec pellentesque nisi metus ac mi. Curabitur imperdiet quam lectus, sed lobortis odio mattis quis. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Nullam eu viverra dui, ut aliquam nulla. Vivamus nunc erat, luctus at aliquet nec, placerat at lorem. Suspendisse interdum imperdiet erat, at elementum metus sodales id. Nunc orci mi, laoreet vitae sodales vitae, congue nec elit. Morbi venenatis varius tortor, quis facilisis elit ultrices in. Quisque consequat magna et libero lobortis lacinia.
-
-\chapter{Methods part 2}
-Every new chapter starts on a new page on the right.
+\section{Molecular representations}
+\label{sec:representations}
