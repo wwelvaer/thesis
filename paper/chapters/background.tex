@@ -370,6 +370,7 @@ With this dataset, they propose three main challenges:
 \end{description}
 
 \subsection{MassSpecGym Dataset}
+\label{subsec:massspecgymdataset}
 The MassSpecGym dataset consists of the largest available spectral libraries: MoNA \cite{mona}, MassBank \cite{horai2010massbank}, GNPS \cite{wang2016sharing} and their in-house data \cite{brungs2024efficient}.
 These datasets are combined and deduplicated.
 Then, all the low quality spectra are filtered out using a standard procotol by \textcite{de2023reproducible} along with some additional filters such as only keeping spectra with an m/z < 1000. After filtering, estimated instrument noise is removed from the spectra. The result is a large dataset (231,000 entries) that contains only high-quality spectral data along with their different molecular representations. This combination of different datasets should combat the problem of only have data from a certain domain described by \textcite{kretschmer2023small}. They also provide even bigger unlabeled datasets for both spectra (24,000,000 entries) and molecules (3 datasets: 1,000,000 entries, 4,000,000 entries and 118,000,000 entries).

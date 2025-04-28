@@ -1,4 +1,4 @@
-\chapter{Methods}
+\chapter{Methods and Materials}
 \label{chap:methods}
 
 All code used for this thesis can be found on \url{https://github.com/wwelvaer/thesis/tree/main/MassSpecGym}
@@ -6,13 +6,40 @@ All code used for this thesis can be found on \url{https://github.com/wwelvaer/t
 \section{Model Training}
 \label{sec:training}
 
-All models trained for this Thesis follow the de novo model architecture from MassSpecGym~\cite{bushuiev2024massspecgym} closely.
+All models trained for this thesis use the dataset described in section \ref{subsec:massspecgymdataset} and follow the de novo model architecture from MassSpecGym~\cite{bushuiev2024massspecgym} closely.
 Most of the model architecture code was heavily inspired by MassSpecGym's source code.
 It uses the pytorch transformer implementation along with a linear layer before and after the transformer to achieve the requested input and output dimensions.
 The training algorithm follows the original transformer implementation from \textcite{vaswani2017attention}.
 The result is a model that predicts the probability distribution of the next token given the peaks of a \ac{MS/MS} spectrum along with an already generated context sequence of tokens.
 
+The exact model used in MassSpecGym suffered from exploding gradients in the first linear layer, which caused the computation to halt by overflow errors.
+Several solutions were implemented to combat this problem.
 
+\begin{description}
+    \item[Gradient clipping]limits the gradient to an interval (often [-1, 1]),
+    when during backpropagation a gradient is not in the interval,
+    it is clipped to the closest boundary.
+    \item[Lowering learning rate]of the affected layer delays the gradients from overflowing.
+    \item[Scaling]the m/z values down to the same interval as the intensities.
+    \item[Lowering the floating point precision]by shortening the mantissa to 7 bits instead of 23 bits (see figure~\ref{fig:bf16}), 
+    all values get rounded to a lower precision. This rounding acts as a regularization step.
+    \begin{figure}[h]
+        \centering
+        \includegraphics[width=\linewidth]{figures/methods/bf16.JPG}
+        \caption{Composition of float32 and bfloat16}
+        \label{fig:bf16}
+    \end{figure}
+    \item[Removing embedding scaling,]because the order of the peaks from the input spectra does not matter,
+    no positional encodings are added, there is therefor also no need to scale the embedding layer as in the original implementation from \textcite{vaswani2017attention}.
+\end{description}
+
+Removing the embedding scaling was the only method that stabilized the training without lowering performance.
+All models described further therefore share the same model architecture as the MassSpecGym de novo models without the embedding scaling step.
+
+All models were trained on the Ugent HPC accelgor cluster using a singular NVIDIA Ampere A100 GPU.
+Training time without sampling was for every model around 2 hours. 
+
+gridsearch uitleg???
 
 
 \section{Samplers}
