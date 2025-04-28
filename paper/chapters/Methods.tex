@@ -20,7 +20,7 @@ Several solutions were implemented to combat this problem.
     when during backpropagation a gradient is not in the interval,
     it is clipped to the closest boundary.
     \item[Lowering learning rate]of the affected layer delays the gradients from overflowing.
-    \item[Scaling]the m/z values down to the same interval as the intensities.
+    \item[Scaling] the m/z values from the peaks in the \ac{MS/MS} spectrum down to the same interval as the intensities from the peaks prevents large differences in the gradients calculation.
     \item[Lowering the floating point precision]by shortening the mantissa to 7 bits instead of 23 bits (see figure~\ref{fig:bf16}), 
     all values get rounded to a lower precision. This rounding acts as a regularization step.
     \begin{figure}[h]
