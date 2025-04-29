@@ -69,6 +69,46 @@ while also extending the search space further than the previously found optimal 
 \section{Samplers}
 \label{sec:samplers}
 
+The MassSpecGym paper~\cite{bushuiev2024massspecgym} implemented a simple naive sampling algorithm that iteratively samples from the (with temperature scaled) output distribution of the model, described as the naive approach in section \ref{sec:samplingmethods}.
+This is repeated $k$ times, with $k$ being the prediction amount for each spectrum. The randomness of the sampler results (optimally) in $k$ different predictions.
+Because we are interested in a relaxation of the prediction problem, where $k=10$ predictions are evaluated, the sample algorithm will be executed 10 times. This can be optimized with parallelization.
+
+A big load of the calculation is the forward pass of the transformer model. 
+If we work with a GPU that has enough VRAM (at least $k$ times more than would be used for sampling one batch),
+we can duplicate the batch $k$ times and feed it trough one forward pass of the model. The inherent parallelization of the GPU will then be used more optimally.
+An execution time benchmark can be found in section \ref{sec:sampler_parallelization} of the appendix.
+
+To benchmark performance of the different sampling algorithms described in section \ref{sec:samplingmethods}, an implementation was made for each algorithm.
+Because the VRAM requirement for the parallelization can be very demanding, two versions of each algorithm were implemented. 
+One version uses the parallelization by reducing the number of forward passes (requiring sufficient VRAM on the GPU), the other version repeats the sampling of one batch just like the original MassSpecGym implementation.
+
+\subsection{Stochastic samplers}
+
+Stochastic autoregressive sampling algorithms introduce some randomness by sampling from the output distribution is some way.
+This allows them to be called multiple times to get different predictions from the same spectra as described before.
+The simplest stochastic sampling algorithm is the naive method described above.
+The logits from the output of the transformer model are first scaled by a temperature parameter to dictate how random the predictions should be.
+A very low temperature will force the model to predict only the token with the highest logit while a very high temperature will force the model to pick a token at random.
+After the logits are scaled, a softmax function maps these to probabilities. These probabilities are sampled by the multinomial function from pytorch.
+
+To reduce randomness and prevent that tokens with small probabilities can be sampled, we can limit the sampling to the top-$k$ tokens.
+Because the tokens with the highest logits will also map to the highest probabilities through the softmax function,
+we can isolate the $k$ tokens with the highest logits before applying the softmax function.
+The output probabilities are then calculated for only these $k$ isolated tokens by applying the softmax function to only these logits, which are then sampled with the multinomial function.
+
+Another way to reduce randomness and prevent tokens with low probabilities to be sampled without explicitly declaring the number of tokens $k$ that should be considered is by adding a cumulative probability threshold $p$ with top-p/nucleus sampling.
+The logits are first passed trough the softmax function to get their probabilities.
+The tokens are then sorted by their probabilities in a descending order.
+From these sorted probabilities, a cumulative distribution is calculated.
+The first $n$ tokens are then selected for which their cumulative probability just exceeds the threshold $p$.
+This results in the smallest subset of tokens with a cumulative probability exceeding $p$.
+These $n$ tokens are then isolated and their probabilities rescaled through the softmax function before being sampled with the multinomial function.
+
+\subsection{Deterministic samplers}
+
+Because there is no randomness in deterministic samplers, the sampling algorithm is not repeated to get $k$ different predictions. The parallelization optimization is hence not applicable here and only one version of these samplers are implemented.
+
+
 \section{Augmentation}
 \label{sec:augmentation}
 
