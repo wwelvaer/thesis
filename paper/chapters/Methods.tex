@@ -11,6 +11,8 @@ Most of the model architecture code was heavily inspired by MassSpecGym's source
 It uses the pytorch transformer implementation along with a linear layer before and after the transformer to achieve the requested input and output dimensions.
 The training algorithm follows the original transformer implementation from \textcite{vaswani2017attention}.
 The result is a model that predicts the probability distribution of the next token given the peaks of a \ac{MS/MS} spectrum along with an already generated context sequence of tokens.
+Spectrum peaks are provided as a 2d array with two columns. Each row corresponds to one peak in the spectrum with the value in the first column being its m/z value and the second column its intensity.
+The model acts as a classifier for the next token by outputting a vector of length $n$, with $n$ being the number of tokens of the tokenizer.
 
 The exact model used in MassSpecGym suffered from exploding gradients in the first linear layer, which caused the computation to halt by overflow errors.
 Several solutions were implemented to combat this problem.
@@ -137,9 +139,25 @@ This is repeated until the maximum prediction length is reached or every $b$ seq
 
 By using a beam width $b=1$, the beam search algorithm can be used as a greedy sampler.
 
-
-\section{BPE as Pretrainer}
+\section{BPE as Pretraining}
 \label{sec:bpe}
+
+A tokenizer maps a token to a (sequence of) character(s) and back. The set of (sequence of) characters in a tokenizer is called its vocabulary.
+All tokenizers in this Thesis for which it's vocabulary was computed with \acf{BPE}, used the ByteLevelBPETokenizer implementation from huggingface's tokenizers library (\url{https://github.com/huggingface/tokenizers/blob/main/bindings/python/py_src/tokenizers/implementations/byte_level_bpe.py}).
+The \ac{BPE} algorithm combines a frequently occurring pair of characters by replacing them with a novel character and storing this replacement in a lookup table.
+This novel character can then also be combined further with other characters. 
+This is repeated until either the lookup table has reached the desired vocabulary size or there are no more frequently occurring pair of characters in the modified dataset.
+These replacements from the lookup table can then be reconstructed to their original sequence of characters.
+These reconstructed sequences denote frequently occurring sequences in the dataset and are stored in the vocabulary of the tokenizer.
+Because of the replacements in the dataset, these sequences can very in length.
+Two important parameters can be set in this algorithm:
+(1) The vocab size discussed before. This dictates the maximum number of sequences that can be stored in the vocabulary and will thus decide if the algorithm will be halted early. The default value is 30,000 .
+(2) The minimum frequency a pair of characters has to occur in the dataset to be stored. The default value is 2 .
+
+The unlabeled molecule datasets used to compute the vocabulary from the different tokenizers in this Thesis are from MassSpecGym, see section \ref{subsec:massspecgymdataset}.
+Each \ac{BPE} tokenizer also used the unique training labels from the training set.
+The SMILES de novo model from the MassSpecGym paper \cite{bushuiev2024massspecgym} used the dataset with 4,000,000 unlabeled SMILES to precompute a tokenizer vocabulary using \ac{BPE}.
+The SELFIES de novo model from the paper did not use \ac{BPE}, the vocabulary of its tokenizer only contains sequences of a single SELFIES tokens.
 
 \section{Augmentation}
 \label{sec:augmentation}
