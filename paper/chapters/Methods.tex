@@ -54,7 +54,7 @@ while also extending the search space further than the previously found optimal 
             \midrule
                 Learning Rate & $\mathbf{3\cdot 10^{-4}}, 1\cdot 10^{-4}, 5\cdot 10^{-5}$ & $1\cdot 10^{-3}, 3\cdot 10^{-4}, \mathbf{1\cdot 10^{-4}}$\\
                 Batch Size & $512, \mathbf{1024}$ & $\mathbf{512}, 1024, 2048$ \\
-                $k$ predictions & $\mathbf{10}$ & $\mathbf{10}$ \\
+                $n$ predictions & $\mathbf{10}$ & $\mathbf{10}$ \\
                 Transformer hidden dimensionality & $\mathbf{256}, 512$ & $\mathbf{128}, 256, 512$ \\
                 Number of attention heads & $\mathbf{4}, 8$ & $2, 4, \mathbf{8}$ \\
                 Number of encoding layers & $\mathbf{3}, 6$ & $\mathbf{2}, 3, 4$ \\
@@ -70,12 +70,12 @@ while also extending the search space further than the previously found optimal 
 \label{sec:samplers}
 
 The MassSpecGym paper~\cite{bushuiev2024massspecgym} implemented a simple naive sampling algorithm that iteratively samples from the (with temperature scaled) output distribution of the model, described as the naive approach in section \ref{sec:samplingmethods}.
-This is repeated $k$ times, with $k$ being the prediction amount for each spectrum. The randomness of the sampler results (optimally) in $k$ different predictions.
-Because we are interested in a relaxation of the prediction problem, where $k=10$ predictions are evaluated, the sample algorithm will be executed 10 times. This can be optimized with parallelization.
+This is repeated $n$ times, with $n$ being the prediction amount for each spectrum. The randomness of the sampler results (optimally) in $n$ different predictions.
+Because we are interested in a relaxation of the prediction problem, where $n=10$ predictions are evaluated, the sample algorithm will be executed 10 times. This can be optimized with parallelization.
 
-A big load of the calculation is the forward pass of the transformer model. 
-If we work with a GPU that has enough VRAM (at least $k$ times more than would be used for sampling one batch),
-we can duplicate the batch $k$ times and feed it trough one forward pass of the model. The inherent parallelization of the GPU will then be used more optimally.
+A big load of the sampling calculation is the forward pass of the transformer model. 
+If we work with a GPU that has enough VRAM (at least $n$ times more than would be used for sampling one batch),
+we can duplicate the batch $n$ times and feed it trough one forward pass of the model. The inherent parallelization of the GPU will then be used more optimally.
 An execution time benchmark can be found in section \ref{sec:sampler_parallelization} of the appendix.
 
 To benchmark performance of the different sampling algorithms described in section \ref{sec:samplingmethods}, an implementation was made for each algorithm.
@@ -90,6 +90,7 @@ The simplest stochastic sampling algorithm is the naive method described above.
 The logits from the output of the transformer model are first scaled by a temperature parameter to dictate how random the predictions should be.
 A very low temperature will force the model to predict only the token with the highest logit while a very high temperature will force the model to pick a token at random.
 After the logits are scaled, a softmax function maps these to probabilities. These probabilities are sampled by the multinomial function from pytorch.
+This is repeated until the maximum prediction length is reached or every prediction in the batch reached the end token.
 
 To reduce randomness and prevent that tokens with small probabilities can be sampled, we can limit the sampling to the top-$k$ tokens.
 Because the tokens with the highest logits will also map to the highest probabilities through the softmax function,
@@ -100,17 +101,52 @@ Another way to reduce randomness and prevent tokens with low probabilities to be
 The logits are first passed trough the softmax function to get their probabilities.
 The tokens are then sorted by their probabilities in a descending order.
 From these sorted probabilities, a cumulative distribution is calculated.
-The first $n$ tokens are then selected for which their cumulative probability just exceeds the threshold $p$.
+The first $m$ tokens are then selected for which their cumulative probability just exceeds the threshold $p$.
 This results in the smallest subset of tokens with a cumulative probability exceeding $p$.
-These $n$ tokens are then isolated and their probabilities rescaled through the softmax function before being sampled with the multinomial function.
+These $m$ tokens are then isolated and their probabilities rescaled through the softmax function before being sampled with the multinomial function.
 
 \subsection{Deterministic samplers}
 
-Because there is no randomness in deterministic samplers, the sampling algorithm is not repeated to get $k$ different predictions. The parallelization optimization is hence not applicable here and only one version of these samplers are implemented.
+Because there is no randomness in deterministic samplers, the sampling algorithm is not repeated to get $n$ different predictions. The parallelization optimization is hence not applicable here and only one version of these samplers are implemented.
 
+A greedy approach to remove randomness is to always sample the token with the highest probability. Because this is the same as the token with the highest logit, no softmax function is needed.
+Again, this is repeated until the maximum prediction length is reached or every prediction in the batch reached the end token.
+This greedy sampler will be only capable of generating one prediction for a spectrum.
+Other samplers can become identical to the greedy sampler by choice of parameters, e.g. top-$k$ sampler with $k=1$, beam-search with only one beam \ldots
+
+To generate multiple predictions for the same spectrum in a deterministic way, beam search can be used.
+It uses a scoring function to score (partial) prediction sequences and stores the highest-scoring sequences at each sampling time step.
+With $b$ being the number of predictions stored, called beam width.
+The beam width decides the size of the search space in the algorithm, as only the highest scoring prediction sequences from the previous sampling time step will be expanded.
+It is a greedy breadth-first search algorithm that maximizes a scoring function.
+
+The used scoring function that scores a sequence of tokens $y$ with length $L$ is:
+\[score(y) = \frac{1}{L^a} \sum\limits_{t=1}^{L}log\ P(y_t | y_{t-1},\dots,y_{1})\]
+It returns the product of the probabilities of token sequences (to make it more computational feasible, the sum of log probabilities).
+Because the scoring function will be used to score sequences with different lengths (as certain sequences will reach the end token faster than others),
+we have to scale the score by its prediction length. Otherwise shorter sequences will be scored higher.
+Parameter $a$ allows the scoring function to be tuned for certain prediction lengths.
+If we desire shorter predictions, $a$ will be closer to 0.
+If we want to score sequences ignoring their length, $a=1$. 
+If longer sequences are preferred, $a>1$.
+
+At each time step the beam search algorithm uses the transformer model to predict the next token probabilities for each sequence stored in the previous time step.
+From these probabilities and their sequence context, new scores are calculated.
+The sequences (context + new token) with the highest $b$ scores are then stored for expansion in the next time step.
+This is repeated until the maximum prediction length is reached or every $b$ sequences for every spectrum in the batch has reached the end token.
+
+By using a beam width $b=1$, the beam search algorithm can be used as a greedy sampler.
+
+
+\section{BPE as Pretrainer}
+\label{sec:bpe}
 
 \section{Augmentation}
 \label{sec:augmentation}
+
+\subsection{SMILES augmentation}
+
+\subsection{Spectral augmentation}
 
 \section{Molecular representations}
 \label{sec:representations}
