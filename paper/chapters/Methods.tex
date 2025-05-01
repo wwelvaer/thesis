@@ -38,7 +38,7 @@ Several solutions were implemented to combat this problem.
 Removing the embedding scaling was the only method that fully stabilized the training without tanking the performance.
 All models described further therefore share the same model architecture as the MassSpecGym de novo models without the embedding scaling step.
 
-All models were trained on the Ugent HPC accelgor cluster using a singular NVIDIA Ampere A100 GPU.
+All models were trained on the Ugent \ac{HPC} accelgor cluster using a singular NVIDIA Ampere A100 GPU.
 Training time without sampling was for every model around 2 hours. 
 
 % Verplaatsen naar results?
@@ -151,8 +151,8 @@ These replacements from the lookup table can then be reconstructed to their orig
 These reconstructed sequences denote frequently occurring sequences in the dataset and are stored in the vocabulary of the tokenizer.
 Because of the replacements in the dataset, these sequences can very in length.
 Two important parameters can be set in this algorithm:
-(1) The vocab size discussed before. This dictates the maximum number of sequences that can be stored in the vocabulary and will thus decide if the algorithm will be halted early. The default value is 30,000 .
-(2) The minimum frequency a pair of characters has to occur in the dataset to be stored. The default value is 2 .
+(1) The vocab size discussed before. This dictates the maximum number of sequences that can be stored in the vocabulary and will thus decide if the algorithm will be halted early. The default value is 30,000.
+(2) The minimum frequency a pair of characters has to occur in the dataset to be stored. The default value is 2.
 
 The unlabeled molecule datasets used to compute the vocabulary from the different tokenizers in this Thesis are from MassSpecGym, see section \ref{subsec:massspecgymdataset}.
 Each \ac{BPE} tokenizer also used the unique training labels from the training set.
@@ -162,9 +162,34 @@ The SELFIES de novo model from the paper did not use \ac{BPE}, the vocabulary of
 \section{Augmentation}
 \label{sec:augmentation}
 
+All datasets were augmented offline, before training, to preserve execution time on the \ac{HPC} of Ghent University.
+Code for the data augmentation can be found as a notebook at \url{https://github.com/wwelvaer/thesis/blob/main/notebooks/augmentation.ipynb}.
+
 \subsection{SMILES augmentation}
 
+SMILES are a one-dimensional representation of a 2d molecular graph.
+The traversal algorithm to convert a molecular graph to a SMILES is deterministic.
+The same molecular graph will always be converted to the same SMILES.
+We can randomize this traversal algorithm to create different SMILES for the same molecular graph.
+The SMILES are then synonyms of each other, as they represent the same molecule.
+RDkit has already implemented the randomized traversal in their MolToSmiles function (\url{https://www.rdkit.org/docs/source/rdkit.Chem.rdmolfiles.html#rdkit.Chem.rdmolfiles.MolToSmiles}).
+
+To generate a SMILES synonym, the original SMILES must be converted to its molecular graph. 
+By using the randomized traversal from that graph back to a SMILES we get a synonym.
+We can now augment the training dataset by copying the spectrum of a training sample but changing the SMILES label to a random synonym.
+
+Three different augmented training sets were created. One where the training data is duplicated once, twice and five times with SMILES synonyms.
+The original training samples with the original SMILES are kept in the datasets.
+
 \subsection{Spectral augmentation}
+
+The \ac{MS/MS} spectra of two identical molecules can be shifted because of different precursor masses.
+We can mimic this to augment the training spectra.
+Following the methods of DreaMS \cite{bushuiev2024emergence}, all augmented spectra are randomly shifted by a maximum m/z range of 50.
+The SMILES labels from the augmented spectra are copied.
+
+Two different augmented training sets were created. One mimicking DreaMS where $20\%$ of the training spectra are augmented, and one where all training spectra are augmented.
+Again, the original training data is kept in the augmented training sets.
 
 \section{Molecular representations}
 \label{sec:representations}
