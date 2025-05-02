@@ -28,7 +28,7 @@ Several solutions were implemented to combat this problem.
     \begin{figure}[h]
         \centering
         \includegraphics[width=\linewidth]{figures/methods/bf16.JPG}
-        \caption{Composition of float32 and bfloat16}
+        \caption{Composition of float32 and bfloat16 (from \url{https://en.wikipedia.org/wiki/Bfloat16_floating-point_format})}
         \label{fig:bf16}
     \end{figure}
     \item[Removing embedding scaling,]because the order of the peaks from the input spectra does not matter,
@@ -164,6 +164,7 @@ The SELFIES de novo model from the paper did not use \ac{BPE}, the vocabulary of
 
 All datasets were augmented offline, before training, to preserve execution time on the \ac{HPC} of Ghent University.
 Code for the data augmentation can be found as a notebook at \url{https://github.com/wwelvaer/thesis/blob/main/notebooks/augmentation.ipynb}.
+For all augmented training sets, a SMILES transformer model was trained with the same optimal hyperparameters from the MassSpecGym paper \cite{bushuiev2024massspecgym}.
 
 \subsection{SMILES augmentation}
 
@@ -193,3 +194,24 @@ Again, the original training data is kept in the augmented training sets.
 
 \section{Molecular representations}
 \label{sec:representations}
+
+All molecular representations used for training different models were translated from the SMILES in the MassSpecGym dataset.
+To ease the implementation of models predicting different molecular representations than SMILES,
+we can add a translation step before the model input and after the model output.
+This allows the model to receive SMILES for training and output SMILES for evaluating,
+while training on, and predicting another molecular representation.
+This method is also used for the de novo SELFIES model in the MassSpecGym paper (see section \ref{subsec:massspecgymmodels}).
+The tokenizer is used to handle translation. Before every encoding, and after every decoding step, a translation step from and to SMILES is performed.
+The code used for all tokenizers can be found at \url{https://github.com/wwelvaer/thesis/blob/main/MassSpecGym/mol_tokenizers.py}.
+
+Multiple models were trained on the following molecular representations: SMILES, DeepSMILES, SELFIES and InchI.
+For each of the four representations a model was trained using a tokenizer pre-computed with \ac{BPE} on the unlabeled 4 million molecules dataset,
+mimicking the implementation from the de novo SMILES model from MassSpecGym. All models used the hyperparameters from this model.
+For SMILES, DeepSMILES and SELFIES, a model was also trained using a tokenizer without \ac{BPE}.
+
+To respect the more complex composition of InchI, a model with multiple decoders was created to predict the different layers of an InchI string.
+Because only the first three layers encode the 2d composition of a molecule, and we are not interested in 3d composition information such as stereochemistry,
+the model only predicts these three layers.
+Three decoders are used to predict these layers. These decoders share the exact same architecture used by the decoders from the other models.
+The tokenizer handles the correct merging of the three predictions by the model.
+To train the model, the loss of the model is the sum of the loss from the three decoders.

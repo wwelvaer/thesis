@@ -378,6 +378,7 @@ Then, all the low quality spectra are filtered out using a standard procotol by 
 Another problem that many of the discussed models experience is leakage \cite{bushuiev2024massspecgym}. Certain molecules used during training are too similar to molecules in the test set. This inflates the results but gives a very distorted image of the model's performance as it will perform much worse on unseen dissimilar molecules. To solve this problem, the train, validate and test folds are clustered by calculating the \ac{MCES} distance between the molecules. This ensures that all molecules have a minimal \ac{MCES} distance (10 in the case of MassSpecGym) to the molecules in other folds. The spectra are also "stratified by instrument types, collision energies, ionization adducts, and the frequency of the molecules in the entire dataset" \cite{bushuiev2024massspecgym} to reduce variance.
 
 \subsection{De Novo Models}
+\label{subsec:massspecgymmodels}
 
 The MassSpecGym paper \cite{bushuiev2024massspecgym} presents 3 baseline models for de novo molecular structure prediction from \ac{MS/MS} data:
 \begin{description}
