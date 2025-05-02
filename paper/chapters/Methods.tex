@@ -200,9 +200,14 @@ To ease the implementation of models predicting different molecular representati
 we can add a translation step before the model input and after the model output.
 This allows the model to receive SMILES for training and output SMILES for evaluating,
 while training on, and predicting another molecular representation.
+The translation occurs thus at training and evaluation time.
 This method is also used for the de novo SELFIES model in the MassSpecGym paper (see section \ref{subsec:massspecgymmodels}).
 The tokenizer is used to handle translation. Before every encoding, and after every decoding step, a translation step from and to SMILES is performed.
 The code used for all tokenizers can be found at \url{https://github.com/wwelvaer/thesis/blob/main/MassSpecGym/mol_tokenizers.py}.
+
+Because SMILES can be rewritten during translation to and from another molecular representation.
+The training SMILES are passed through each representation's tokenizer to compute the actual training labels for the corresponding models.
+This way the amount of de novo predictions can be accurately measured with different molecular representations.
 
 Multiple models were trained on the following molecular representations: SMILES, DeepSMILES, SELFIES and InchI.
 For each of the four representations a model was trained using a tokenizer pre-computed with \ac{BPE} on the unlabeled 4 million molecules dataset,
