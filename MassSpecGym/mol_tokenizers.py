@@ -551,10 +551,61 @@ class DummyBPETokenizer(SpecialTokensBaseTokenizer):
         tokenizer.train_from_iterator(iterator, vocab_size, min_frequency=min_frequency)
         super().__init__(tokenizer, **kwargs)
 
-class LayeredInchIBPETokenizer():
-    def __init__(self, dataset_size: int=4, inchi_pth: T.Optional[str] = None, cache_dir=None, vocab_size=30000, min_frequency=2, **kwargs):
+class DummyTokenizer(SpecialTokensBaseTokenizer):
+    def __init__(self, iterator, vocab_size=None, min_frequency=None, **kwargs):
         """
-        Initialize the BPE tokenizer for InchI strings, with optional training data.
+        Initialize the tokenizer for strings
+        """
+        
+        vocab = {t: i for i,t in enumerate(set(y for x in iterator for y in list(x)))}
+
+        vocab[UNK_TOKEN] = len(vocab)
+        tokenizer = Tokenizer(models.WordLevel(vocab=vocab, unk_token=UNK_TOKEN))
+
+        super().__init__(tokenizer, **kwargs)
+
+    def _decode_wordlevel_str(self, text: str) -> str:
+        """Converts a WordLevel string back to a string."""
+        return text.replace(" ", "")
+
+    def decode(self, token_ids: T.List[int], skip_special_tokens: bool = True) -> str:
+        """Decodes a list of token IDs back into a string."""
+        smiles_string = super().decode(
+            token_ids, skip_special_tokens=skip_special_tokens
+        )
+        return self._decode_wordlevel_str(smiles_string)
+
+    def decode_batch(
+        self, token_ids_batch: T.List[T.List[int]], skip_special_tokens: bool = True
+    ) -> T.List[str]:
+        """Decodes a batch of token IDs back into strings."""
+        strings = super().decode_batch(
+            token_ids_batch, skip_special_tokens=skip_special_tokens
+        )
+        return [
+            self._decode_wordlevel_str(s)
+            for s in strings
+        ]
+    
+    def encode(self, string: str, add_special_tokens: bool = True) -> Tokenizer:
+        """Encodes a string into a list of token IDs."""
+        return super().encode(
+            list(string), is_pretokenized=True, add_special_tokens=add_special_tokens
+        )
+
+    def encode_batch(
+        self, strings: T.List[str], add_special_tokens: bool = True
+    ) -> T.List[Tokenizer]:
+        """Encodes a batch of strings into a list of token IDs."""
+        tokens = [list(s) for s in strings]
+        return super().encode_batch(
+            tokens, is_pretokenized=True, add_special_tokens=add_special_tokens
+        )
+
+class LayeredInchITokenizer():
+    def __init__(self, dataset_size: int=4, inchi_pth: T.Optional[str] = None, cache_dir=None, vocab_size=30000, min_frequency=2, tokenizer=DummyTokenizer, **kwargs):
+        """
+        Initialize the tokenizer for InchI strings, with optional training data.
         """
         self.num_layers = 3
         self.inchi_pattern = re.compile(r"^InChI=1S/([^/]*)/c([^/]*)/h([^/]*)/?.*$")
@@ -588,11 +639,11 @@ class LayeredInchIBPETokenizer():
 
         
         print(f"Training tokenizer f")
-        self.tokenizer_f = DummyBPETokenizer(inchis_f, vocab_size=vocab_size, min_frequency=min_frequency, **kwargs)
+        self.tokenizer_f = tokenizer(inchis_f, vocab_size=vocab_size, min_frequency=min_frequency, **kwargs)
         print(f"Training tokenizer c")
-        self.tokenizer_c = DummyBPETokenizer(inchis_c, vocab_size=vocab_size, min_frequency=min_frequency, **kwargs)
+        self.tokenizer_c = tokenizer(inchis_c, vocab_size=vocab_size, min_frequency=min_frequency, **kwargs)
         print(f"Training tokenizer h")
-        self.tokenizer_h = DummyBPETokenizer(inchis_h, vocab_size=vocab_size, min_frequency=min_frequency, **kwargs)
+        self.tokenizer_h = tokenizer(inchis_h, vocab_size=vocab_size, min_frequency=min_frequency, **kwargs)
 
         self.tokenizers = [self.tokenizer_f, self.tokenizer_c, self.tokenizer_h]
 
@@ -614,6 +665,7 @@ class LayeredInchIBPETokenizer():
         if m is None:
             return None
         layers = m.groups()
+        print(layers)
         assert len(layers) == len(self.tokenizers), f"invalid number of layers: {len(layers)}, expected {len(self.tokenizers)}"
         return [t.encode(s) for s, t in zip(layers, self.tokenizers)]
 
@@ -629,7 +681,7 @@ class LayeredInchIBPETokenizer():
 
     def decode_batch(self, token_ids_layers_batch: T.List[T.List[T.List[int]]]) -> T.List[str]:
         """Decodes tensors for each InchI layer containing token IDs back into a SMILES string."""
-        assert len(set([(x.size(0), x.size(1)) for x in token_ids_layers_batch])) == 1, "Layers do not have same batch size or number of predictions"
+        assert len(set([(len(x), len(x[0])) for x in token_ids_layers_batch])) == 1, "Layers do not have same batch size or number of predictions"
         return [
             [self.decode(x) for x in zip(bl1.tolist(), bl2.tolist(), bl3.tolist())] 
                 for bl1, bl2, bl3 in zip(*token_ids_layers_batch)

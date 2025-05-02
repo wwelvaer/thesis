@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import typing as T
 from torch_geometric.nn import MLP
-from mol_tokenizers import LayeredInchIBPETokenizer
+from mol_tokenizers import LayeredInchITokenizer
 from massspecgym.data.transforms import MolToFormulaVector
 from massspecgym.models.base import Stage
 from transformer_base import DeNovoMassSpecGymModel
@@ -21,7 +21,7 @@ class LayeredInchiTransformer(DeNovoMassSpecGymModel):
         nhead: int,
         num_encoder_layers: int,
         num_decoder_layers: int,
-        layered_inchi_tokenizer: LayeredInchIBPETokenizer,
+        layered_inchi_tokenizer: LayeredInchITokenizer,
         start_token: str = SOS_TOKEN,
         end_token: str = EOS_TOKEN,
         pad_token: str = PAD_TOKEN,
