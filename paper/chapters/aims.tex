@@ -2,12 +2,54 @@
 \label{chap:aims}
 
 De novo molecular structure prediction from \ac{MS/MS} research is still at a very early stage.
-A few attempts were made to adopt the already more established research from the Natural Language Processing field regarding the use of deep generative models for text prediction, to predict SMILES.
+A few attempts were made to adopt the already more established research from the \ac{NLP} field regarding the use of deep generative models for text prediction, to predict SMILES.
 Many decisions made to the model architecture were made by copying earlier research on large language models.
 Because we are working in a different research domain, and the textual molecular representations have entirely different properties compared to natural language,
 many of these decisions could be questioned.
 Only now that a standardized dataset and benchmark (MassSpecGym) was released, it is possible to optimize these models.
 The aim of this thesis is not to train the best de novo molecular structure predicting model,
-only to benchmark the currently most used methods in the domain.
+only to benchmark the currently most used methods in the de novo string-based molecular structures prediction domain.
 This way, further research can adopt these findings and steer away from the standards of the natural language processing field.
+
+The following experiments are performed in this thesis:
+
+\begin{description}
+    \item[Replicate MassSpecGym results]
+    To establish a common baseline for the experiments and because the trained models are not available, the de novo models from the MassSpecGym paper \cite{bushuiev2024massspecgym} have to be retrained.
+    A lot of the optimal hyperparameters from the paper's results are on the edge of its search space.
+    To verify that these are the optimal hyperparameters, a grid search with an extended search space has to be replicated.
+    In this thesis only a grid earch for the SMILES de novo model is performed.
+    
+    \item[Benchmark autoregressive samplers]
+    There are a lot of different auto-regressive sampling algorithms from the \ac{NLP} domain.
+    The limited research that exists to compare these algorithms for string-based molecular structures was done on outdated models and domain specific datasets \cite{stravs2022msnovelist}.
+    For this experiment the different samplers from section \label{sec:samplingmethods} are benchmarked on the SMILES.
+    
+    \item[\acf{BPE} as pretraining]
+    One of the biggest challenges for SMILES predicting models is the validity of the output. Syntax or chemical errors lead to invalid SMILES.
+    To combat this, the de novo SMILES model from MassSpecGym uses a tokenizer that pre-compute its vocabulary with \ac{BPE} on a large unlabeled dataset of SMILES.
+    The model can then use the learned patterns from the tokenizer to train and predict SMILES.
+    This can be considered a way of pre-training the model.
+    A few key question to be considered with this method are: 
+    (1) How does using \ac{BPE} impact performance?
+    (2) Can we improve the pre-training by using a larger unlabeled dataset?
+    (3) Does this method influence over-fitting?
+    This experiment will try to answer these questions by benchmarking performance of SMILES models trained with different tokenizers.
+
+    \item[Augmentation]
+    A recurring problem for training de novo molecular structure predicting models, is the lack of training data.
+    To combat this without actually measuring new data, data augmentation can be used. 
+    Two augmentation methods are benchmarked in this thesis.
+    (1) Because multiple SMILES can represent the same molecule, we can use these SMILES synonyms as label augmentation.
+    (2) A different precursor mass can cause the mass spectra of identical molecules to be shifted.
+    We can use this to our advantage to mimic new spectra by applying a small identical shift to the peaks.
+    This way the training spectra can be augmented.
+    This experiment measures the performance and overfitting by using these augmentation methods.
+
+    \item[Molecular representations]
+    Different string-based molecular representations have been published (see section \ref{sec:molrepr}) to describe a molecular structure.
+    By comparing performance on identical models trained with different string-based molecular representations,
+    the goal of this experiment is to find the best string-based molecular representation for de novo molecular structure prediction.
+     
+\end{description}
 
