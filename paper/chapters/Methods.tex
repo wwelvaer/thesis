@@ -196,6 +196,7 @@ Again, the original training data is kept in the augmented training sets.
 \label{sec:representations}
 
 All molecular representations used for training different models were translated from the SMILES in the MassSpecGym dataset.
+For translation, RDkit was used except for DeepSMILES and SELFIES, these molecular representations have their own packages with the same name.
 To ease the implementation of models predicting different molecular representations than SMILES,
 we can add a translation step before the model input and after the model output.
 This allows the model to receive SMILES for training and output SMILES for evaluating,
@@ -218,5 +219,5 @@ To respect the more complex composition of InchI, a model with multiple decoders
 Because only the first three layers encode the 2d composition of a molecule, and we are not interested in 3d composition information such as stereochemistry,
 the model only predicts these three layers.
 Three decoders are used to predict these layers. These decoders share the exact same architecture used by the decoders from the other models.
-The tokenizer handles the correct merging of the three predictions by the model.
+Each decoder has its own tokenizer. For simplicity, a parent tokenizer handles these three tokenizers and handles the correct merging of the three predictions by the model.
 To train the model, the loss of the model is the sum of the loss from the three decoders.
