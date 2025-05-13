@@ -47,18 +47,19 @@ The top-1 and top-10 exact match accuracy for both models is (close to) zero.
 Even though the naive sampler adds a bit of randomization by sampling from the output distribution, the retrained SMILES model from MassSpecGym outperforms the model with the lowest validation loss.
 
 A big contributing factor to this performance difference is the fact that the retrained MassSpecGym model is able to predict 10\% more valid SMILES, as invalid SMILES have the maximum MCES distance and zero Tanimoto similarity.
-The validity of the SMILES prediction relies heavily on the sampler and the temperature scaling of the output distribution.
-Because only a naive sampler with no temperature scaling was used it is possible that better performance can be extracted from these models using different samplers and temperature scaling.
+The validity of the SMILES prediction can rely on the sampler and the temperature scaling of the output distribution.
+Because only a naive sampler with no temperature scaling was used, it is possible that better performance can be extracted from these models using different samplers and temperature scaling.
 
 
 \section{Samplers benchmark}
 
-To measure the influence of temperature scaling and using different samplers, and determine if these can heavily impact model performance, different samplers were used to predict the validation set of the model with the lowest loss from table \ref{tab:gridsearch}.
+To test how much temperature scaling and different samplers can influence model performance, different samplers were used to predict the validation set of the model with the lowest loss from table \ref{tab:gridsearch}.
 For this and all further experiments conducted in this thesis, the Tanimoto similarity is directly correlated to the MCES distance and will thus not be shown in the plots.
 All performance differences shown with the MCES distance always show the same relative tanimoto similarities.
 
-To measure how much the randomization of the naive sampler influences the performance of the predictions,
-figure \ref{fig:naive_and_greedy} shows the 
+Firstly the temperature scaling influence is measured in figure \ref{fig:naive_and_greedy} for the top-1 and top-10 settings.
+Because this will influence the randomness the sampler's predictions, a simple greedy sampler that always predicts the most likely token is shown as a deterministic baseline.
+This sampler will always predict the same SMILES and can thus only be top-1 evaluated.
 
 \begin{figure}[h]
     \centering
@@ -67,6 +68,20 @@ figure \ref{fig:naive_and_greedy} shows the
     \label{fig:naive_and_greedy}
 \end{figure}
 
+From figure \ref{fig:naive_and_greedy}, it is clear that the naive sampler performs poorly when only one prediction is evaluated (top-1).
+Increasing the randomness (by increasing the temperature) for the top-1 naive sampler, only worsens the MCES distance.
+As expected, the top-1 naive sampler MCES distance converges to the greedy sampler's MCES distance as the temperature approaches zero, as extremely low temperatures force the model to only predict the most likely token.
+
+The top-10 naive sampler shows to have an optimal temperature around $0.7$, for this SMILES model.
+A higher temperature increases the randomness of the sampler too much causing the amount of valid predictions to drop.
+A lower temperature starts to force the predictions towards the greedy sampler.
+This shows that temperature can indeed influence the sampler's performance.
+
+\subsection{Stochastic Samplers}
+
+Variations naive sampler
+
+\subsection{Deterministic Samplers}
 
 
 \section{\ac{BPE} as pretraining}
