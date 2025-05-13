@@ -1,4 +1,4 @@
-\chapter{Methods and Materials}
+\chapter{Methods}
 \label{chap:methods}
 
 All code used for this thesis can be found on \url{https://github.com/wwelvaer/thesis/tree/main/MassSpecGym}
@@ -43,11 +43,8 @@ Every model was trained with an early stopping criterion of five epochs of non-i
 All models were trained on the Ugent \ac{HPC} accelgor cluster using a singular NVIDIA Ampere A100 GPU.
 Training time without sampling was for every model around 2 hours. 
 
-% Verplaatsen naar results?
 To replicate the results from MassSpecGym, a hyperparameter gridsearch was conducted taking the optimal hyperparameters (= hyperparameters from the model with the lowest validation loss) from the MassSpecGym results into account
 while also extending the search space further than the previously found optimal values.
-
-%%
 
 \section{Samplers}
 \label{sec:samplers}
