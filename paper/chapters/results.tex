@@ -72,16 +72,51 @@ From figure \ref{fig:naive_and_greedy}, it is clear that the naive sampler perfo
 Increasing the randomness (by increasing the temperature) for the top-1 naive sampler, only worsens the MCES distance.
 As expected, the top-1 naive sampler MCES distance converges to the greedy sampler's MCES distance as the temperature approaches zero, as extremely low temperatures force the model to only predict the most likely token.
 
-The top-10 naive sampler shows to have an optimal temperature around $0.7$, for this SMILES model.
+The top-10 naive sampler benefits greatly from its randomness, by performing better than the greedy sampler according to the MCES distance.
+It shows to have an optimal temperature around $0.7$, for this SMILES model.
 A higher temperature increases the randomness of the sampler too much causing the amount of valid predictions to drop.
 A lower temperature starts to force the predictions towards the greedy sampler.
 This shows that temperature can indeed influence the sampler's performance.
 
 \subsection{Stochastic Samplers}
 
-Variations naive sampler
+The randomness of the naive sampler can be tweaked using samplers such as top-k and top-p (nucleus sampling).
+Because the stochastic samplers only benefit from their randomness when evaluating in a top-10 setting, only these results will be shown on the plots.
+The temperature has shown to influence performance, therefore, a temperature search was conducted for each sampler with different parameters $k$ or $p$, where the optimal temperature (according to the lowest MCES distance) was selected.
+This ensures that only the best results are shown for each the sampler with its parameter.
+For completeness, the top-1, along with the temperature search results can be found in the appendix in section \ref{sec:sampler_full_results}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{figures/results/samplers/top-k.png}
+    \caption{Evaluation of the (top-10, temperature optimized) top-k sampler and naive sampler on the validation set.}
+    \label{fig:top-k}
+\end{figure}
+
+Figure \ref{fig:top-k} shows that top-k sampling can slightly improve performance when $k > 5$.
+This shows that when the sampler gets forced with a low $k$ it performs slightly worse. 
+Note that the y-axis is scaled for visibility, the improvement is very small.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{figures/results/samplers/top-p.png}
+    \caption{Evaluation of the (top-10, temperature optimized) top-p sampler and naive sampler on the validation set.}
+    \label{fig:top-p}
+\end{figure}
+
+While with top-k, limiting the randomization seems to slightly improve performance of the sampler, figure \ref{fig:top-p} shows that this does not hold for the top-p sampler.
+Overall these randomization limiting samplers do not considerably improve the naive sampler.
 
 \subsection{Deterministic Samplers}
+
+TODO
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{figures/results/samplers/beam_search.png}
+    \caption{Evaluation of the beam search sampler compared to the greedy and naive sampler on the validation set.}
+    \label{fig:beam-search}
+\end{figure}
 
 
 \section{\ac{BPE} as pretraining}

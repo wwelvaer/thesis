@@ -61,6 +61,7 @@ An execution time benchmark can be found in section \ref{sec:sampler_paralleliza
 To benchmark performance of the different sampling algorithms described in section \ref{sec:samplingmethods}, an implementation was made for each algorithm.
 Because the VRAM requirement for the parallelization can be very demanding, two versions of each algorithm were implemented. 
 One version uses the parallelization by reducing the number of forward passes (requiring sufficient VRAM on the GPU), the other version repeats the sampling of one batch just like the original MassSpecGym implementation.
+These versions will have the same results and will only differ in execution time.
 
 \subsection{Stochastic samplers}
 
