@@ -133,15 +133,35 @@ The spike in MCES distance and fraction of valid predictions on the first data p
 It outperforms the greedy sampler but does not come close to the best top-10 naive sampler results. 
 For the top-1 setting, the performance shows to be worse than the greedy sampler.
 This indicates that the scoring function is not optimal for extracting the correct molecular structure, especially with a small search space.
-The only metric where the beam search samplers seems to outperform the others is the fraction of valid predictions.
+The only metric where the beam search sampler seems to outperform the others is the fraction of valid predictions.
 
 These deterministic sampling methods perform best at predicting valid molecules as the fraction of valid predictions is substantially higher than with the optimal stochastic samplers.
 When evaluating in a top-1 setting, where every invalid predictions is punished, these samplers are thus preferred.
 
 Overall, from these results, the greedy sampler seems to perform best for the top-1 setting, while the naive sampler excels in the top-10 setting.
-
+For all the following experiments in this thesis, the greedy and naive samplers are only used for the top-1 and top-10 setting respectively.
 
 \section{\ac{BPE} as pretraining}
+
+To measure the influence of the \acf{BPE} vocabulary computation of the tokenizer on the model's performance, SMILES models were trained with different tokenizers.
+These tokenizers only differ in the vocabulary computation (and consequently, vocabulary size).
+The training hyperparameters are kept the same for all models.
+
+One simple tokenizer that does not pre-compute any patterns with \ac{BPE} in its vocabulary was used to train a baseline model.
+The other tokenizers use datasets with different sizes of unlabeled SMILES from MassSpecGym.
+These datasets are referred further as 4M for the 4,000,000 SMILES dataset, and 118M for the 118,000,000 SMILES dataset.
+By using these unlabeled datasets, this could be considered a way to pre-train the model by storing frequently occurring patterns as one token in the vocabulary. 
+All tokenizers, pre-computed with \ac{BPE}, also use the training SMILES in its \ac{BPE} corpus.
+One tokenizer used \ac{BPE} with the training SMILES only to test how much unlabeled data can influence performance.
+
+For the 4M and 118M dataset, a second tokenizer was pre-computed where the \ac{BPE} algorithm was given a more strict cut-off for grouping characters, by increasing the minimal frequency parameter from 2 (default value) to 10.
+Lastly, because the vocabulary size of the 118M tokenizer reached the algorithm's threshold, a tokenizer was computed on the 118M dataset where computation halted as soon as the vocabulary reached the size of 5200 (= vocabulary size of the 4M tokenizer). 
+
+Figure \ref{fig:bpe} shows the greedy top-1 and best naive top-10 samplers results of the models trained with these different tokenizers.
+A new evaluation metric, the fraction of novel predictions, can be seen in the third plot.
+This measures how much the model is able to predict unseen SMILES as a metric to measure overfitting.
+The complete temperature search for the naive top-10 sampler can be found in the appendix figure \ref{fig:bpe_appendix}.
+
 
 \begin{figure}[h]
     \centering
@@ -149,6 +169,11 @@ Overall, from these results, the greedy sampler seems to perform best for the to
     \caption{Evaluation on the validation set of SMILES models trained with different tokenizers}
     \label{fig:bpe}
 \end{figure}
+
+- BPE 4M best MCES
+- BPE increases valid predictions
+- BPE causes overfitting, min freq helps suppress
+
 
 \section{Augmentation}
 
