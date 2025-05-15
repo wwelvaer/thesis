@@ -170,10 +170,27 @@ The complete temperature search for the naive top-10 sampler can be found in the
     \label{fig:bpe}
 \end{figure}
 
-- BPE 4M best MCES
-- BPE increases valid predictions
-- BPE causes overfitting, min freq helps suppress
+The most noticeable result from figure \ref{fig:bpe} is that the models that were trained using a BPE tokenizer have more valid predictions.
+Note that the y-axis of the fraction of valid predictions plot does not start at zero for readability.
+Using \ac{BPE} does indeed succeed in reducing invalid predictions.
+A huge drawback, however, can be seen when looking ate the fraction of novel predictions.
+Using \ac{BPE} with the standard parameters almost halves the number of novel predictions compared to the model trained with the tokenizer that did not use \ac{BPE},
+and can thus directly be linked to the overfitting of the model.
 
+The \ac{BPE} 4M tokenizer has the best performance looking at the MCES distance, it also achieves on of the highest number of valid predictions compared to the other tokenizers.
+The poor amount of novel predictions does question if this result is due to overfitting as for the top-1 greedy sampler, $60\%$ of its predictions are from the training set SMILES.
+
+A strange result is that the larger 118M dataset does not exceed the 4M tokenizer's MCES distance, more unlabeled data does not seem to help.
+This can however be due to the fact that the quality of this dataset can be questioned.
+Limiting the vocabulary size also shows to negatively impact the MCES distance, although for the 118M tokenizer it does increase the number of valid predictions.
+Increasing the minimal frequency for patterns to be grouped also shows to noticeably increase the number of novel predictions.
+This means that the overfitting trough \ac{BPE} models can be limited.
+The 118M tokenizer with a minimal frequency of 10 almost reaches the same number of novel predictions as the model without \ac{BPE}, with $10\%$ more valid predictions for the top-1 greedy sampler.
+Its MCES distance is worse however.
+
+Overall, using \ac{BPE} with the tokenizers does reach its goal of improving the number of valid predictions.
+When solely looking at the MCES distance, using \ac{BPE} can (in some cases) improve the model's performance.
+The number of novel predictions does put these results in doubt, questioning the generalization of these models.
 
 \section{Augmentation}
 
