@@ -8,6 +8,8 @@
 
 \section{Samplers benchmark}
 
+- Beam search: Score function using loss is not optimal
+
 
 \section{\ac{BPE} as pretraining}
 
@@ -15,6 +17,9 @@
 \section{Augmentation}
 
 \subsection{SMILES augmentation}
+- SMILES from molecular graph is deterministic, evaluation is done on only these deterministic outputs, by randomizing the SMILES with synonyms it confuses the model and will perform worse on the evaluated SMILES.
+- model not powerfull enough
+- BPE does not help because augmented patterns use more tokens
 
 \subsection{Spectral augmentation}
 

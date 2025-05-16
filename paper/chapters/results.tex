@@ -130,9 +130,10 @@ Forcing the sampler to predict longer token sequences with parameter $\alpha$ th
 
 Figure \ref{fig:beam-search} shows that the top-1 and top-10 MCES distance for the beam search sampler improves with increased search space as expected.
 The spike in MCES distance and fraction of valid predictions on the first data point is because the beam width is 1, meaning it is essentially the same as the greedy sampler.
-It outperforms the greedy sampler but does not come close to the best top-10 naive sampler results. 
+The top-10 beam search sampler outperforms the greedy sampler but does not come close to the best top-10 naive sampler results. 
 For the top-1 setting, the performance shows to be worse than the greedy sampler.
 This indicates that the scoring function is not optimal for extracting the correct molecular structure, especially with a small search space.
+Because the top-10 evaluation outperforms the top-1, it shows that the prediction with the lowest score is often not the prediction with the lowest MCES distance, indicating the flaw of using the loss in the scoring function.
 The only metric where the beam search sampler seems to outperform the others is the fraction of valid predictions.
 
 These deterministic sampling methods perform best at predicting valid molecules as the fraction of valid predictions is substantially higher than with the optimal stochastic samplers.
@@ -194,9 +195,54 @@ The number of novel predictions does put these results in doubt, questioning the
 
 \section{Augmentation}
 
+The influence of different augmentation methods was measured by retraining MassSpecGym's SMILES de novo model with different augmented datasets.
+For each of these models, along with the baseline model without augmentation, the MCES distance, fraction of valid predictions and fraction of novel predictions were evaluated on the validation set.
+Again, for the top-1 setting a greedy sampler was used and a temperature search of the naive sampler was performed for top-10.
+Full results for the top-10 temperature searches can be found in the appendix at section \ref{sec:temp_search_appendix}.
+
 \subsection{SMILES augmentation}
+
+SMILES labels can be augmented by calculating the synonyms of these SMILES that represent the same molecular graphs.
+The dataset can then be duplicated by copying the spectra and using the synonyms as labels.
+This should allow the model to be more robust against repeated SMILES in the training set.
+For this experiment three models were trained, for which the whole training set was duplicated once, twice and five times with SMILES synonyms (referred as 1x synonym, 2x synonyms and 5x synonyms respectively in the results).
+For all these models the original training data with the original SMILES was kept in the training set.
+Figure \ref{fig:smiles_augm} shows the evaluated results of these models using different evaluation metrics and settings.
+The full naive sampler's top-10 temperature search results can be found in the appendix figure \ref{fig:smiles_augmentation_appendix}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{figures/results/smiles_augmentation.png}
+    \caption{Evaluation on the validation set of SMILES models trained with different SMILES augmented datasets}
+    \label{fig:smiles_augm}
+\end{figure}
+
+From figure \ref{fig:smiles_augm} it is clear that SMILES augmentation does not seem to improve the de novo SMILES model from MassSpecGym.
+The MCES distance and number of valid predictions get worse when more augmented SMILES are used for training.
+Only the number of novel molecules, top-1 predicted, seems to increase by using some augmentation.
+Too much augmentation reduces this again.
+
+Overall, MassSpecGym's de novo SMILES model does not seem robust/powerful enough to handle any SMILES augmented data.
 
 \subsection{Spectral augmentation}
 
+By mimicking differing precursor masses from the input samples through spectral shifts, the input spectra can be augmented.
+The dataset was augmented by applying random mz-shifts to spectra and copying their SMILES labels.
+Two models were trained for this experiments, with $20\%$ and $100\%$ of the training spectra augmented (referred as $20\%$ mz shift augm. and $100\%$ mz shift augm. respectively in the results).
+Again, the original training data is kept in the training set.
+Figure \ref{fig:spectral_augm} shows the evaluated results of these models using different evaluation metrics and settings.
+As usual, the full naive samplers top-10 temperature search results can be found in the appendix figure \ref{fig:spectral_augmentation_appendix}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{figures/results/spectrum_augmentation.png}
+    \caption{Evaluation on the validation set of SMILES models trained with different spectral augmented datasets}
+    \label{fig:spectral_augm}
+\end{figure}
+
+In contrast to the previous augmentation method, the spectral augmentation does seem to help the de novo SMILES model from MassSpecGym.
+While there are no significant improvements looking at the MCES distance, the $20\%$ augmented model is able to predict more valid and especially more novel molecules.
+Too much augmentation again hinders performance as the original data gets drowned in augmented data.
+This method of augmentation, when moderately used, clearly seems to help the model be less prone to overfitting, as the top-1 greedy sampler is able to predict more than $20\%$ more novel molecules. 
 
 \section{Molecular representations benchmark}
