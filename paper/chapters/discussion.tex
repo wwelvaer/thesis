@@ -25,3 +25,10 @@
 
 
 \section{Molecular representations benchmark}
+
+Models not optimized for hyperparameters
+samplers chosen based of SMILES results
+
+3 headed inchi could be improved by supplying the output of the previous decoder to the next, to ensure they know what molecule it is trying to predict
+
+SELFIES can benefit from BPE because some tokens have different meaning in context of rings and groups, without the model overfitting

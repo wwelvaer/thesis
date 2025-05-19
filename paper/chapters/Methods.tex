@@ -192,7 +192,7 @@ This way the amount of de novo predictions can be accurately measured with diffe
 Multiple models were trained on the following molecular representations: SMILES, DeepSMILES, SELFIES and InchI.
 For each of the four representations a model was trained using a tokenizer pre-computed with \ac{BPE} on the unlabeled 4 million molecules dataset,
 mimicking the implementation from the de novo SMILES model from MassSpecGym. All models used the hyperparameters from this model.
-For SMILES, DeepSMILES and SELFIES, a model was also trained using a tokenizer without \ac{BPE}.
+For these representation, a model was also trained using a tokenizer without \ac{BPE}.
 
 To respect the more complex composition of InchI, a model with multiple decoders was created to predict the different layers of an InchI string.
 Because only the first three layers encode the 2d composition of a molecule, and we are not interested in 3d composition information such as stereochemistry,
