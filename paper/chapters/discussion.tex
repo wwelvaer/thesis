@@ -14,19 +14,27 @@ There are a few contributing factors to this overfitting problem with the setup 
             As mentioned in the paper from MassSpecGym \cite{bushuiev2024massspecgym}, the dataset is a collection of the most qualitative annotated open-source mass spectrometry datasets.
             Even though a lot of filtering was performed after thorough quality control, the amount of duplicate molecules is significant.
             Figure \ref{fig:duplicate_smiles} shows the amount of SMILES that have multiple occurrences in the training set. Notice the logarithmic y-axis for readability.
-            Even though $84\%$ of unique molecules have 10 occurrences or less, some molecules are noticeably more present in the training set, with one molecule being present 477 times in the training set.
+            Even though 84\% of unique molecules have 10 occurrences or less, some molecules are noticeably more present in the training set, with one molecule being present 477 times in the training set.
             This imbalance does not necessarily reflect the real-world imbalance of molecules as it is caused by the use of imbalanced datasets.
             This causes the models to be trained with a bias towards these more frequent occurring molecules in the training set.
-            This imbalance is also present in the validation (and test) set, where the most frequently occurring molecule accounts for $2.7\%$ (out of the almost 20.000 entries) of the validation data.
+            This imbalance is also present in the validation (and test) set, where the most frequently occurring molecule accounts for 2.7\% (out of the almost 20.000 entries) of the validation data.
             Because of this imbalance, the models will be evaluated with a bias towards these more abundant molecules.
     \begin{figure}[h]
         \centering
-        \includegraphics[width=0.5\textwidth]{figures/discussion/duplicate_smiles_training_set.png}
+        \includegraphics[width=0.6\textwidth]{figures/discussion/duplicate_smiles_training_set.png}
         \caption{distribution of duplicate SMILES in MassSpecGym's training set with a logarithmic scale}.
         \label{fig:duplicate_smiles}
     \end{figure}
 
-    \item[Model training] During training a teacher forcing approach is used (Exposure Bias)
+    \item[Exposure bias] During training, a teacher forcing approach is used, where only the ground truth tokens are used to generate the next token iteratively.
+    At inference time, when the model is sampled, the model does not get this help and has to rely on its own previous (incorrect) predictions.
+    This is often referred to as exposure bias \cite{schmidt2019generalization}.
+    The previously discussed imbalance of the training set only makes this bias worse, by training on these frequently occurring token combinations.
+    This severely hinders the generalization of the model.
+    An example of this exposure bias can be clearly seen in the results from the hyperparameter gridsearch (figure \ref{fig:gridsearch_vs_paper}), where a model with a lower validation loss performed worse at inference time.
+    The loss has this teacher forced advantage, while the metrics calculated on the sampled predictions do not.
+    Because all models trained in this thesis are optimized for validation loss, it can be questioned if they have been overfit on these teacher forced predictions.
+    
     \item[MCES distance] Does not show overfitting 
 \end{description}
 
@@ -83,3 +91,4 @@ SELFIES can benefit from BPE because some tokens have different meaning in conte
 \section{Future for de novo structure prediction}
 
 - string based representations not suited, reference graph based paper
+- autoregressive models not suited for molecular structure generation by exposure bias
