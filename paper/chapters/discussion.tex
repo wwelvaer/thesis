@@ -35,7 +35,8 @@ There are a few contributing factors to this overfitting problem with the setup 
     The loss has this teacher forced advantage, while the metrics calculated on the sampled predictions do not.
     Because all models trained in this thesis are optimized for validation loss, it can be questioned if they have been overfit on these teacher forced predictions.
     
-    \item[MCES distance] Does not show overfitting 
+    \item[Evaluation metrics] The metric that best describes how close close a prediction is to the actual molecule is the \ac{MCES} distance.
+    Problem: Does not show overfitting, even empty predictions can have low MCES distance...
 \end{description}
 
 

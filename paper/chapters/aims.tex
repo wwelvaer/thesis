@@ -28,8 +28,8 @@ The following experiments are performed in this thesis:
     
     \item[\acf{BPE} as pretraining]
     One of the biggest challenges for SMILES predicting models is the validity of the output. Syntax or chemical errors lead to invalid SMILES.
-    To combat this, the de novo SMILES model from MassSpecGym uses a tokenizer that pre-computes its vocabulary with \ac{BPE} on a large unlabeled dataset of SMILES.
-    The model can then use the learned patterns from the tokenizer to train and predict SMILES.
+    To combat this, the de novo SMILES model from MassSpecGym uses a tokenizer that computes its vocabulary with \ac{BPE} on a large unlabeled dataset of SMILES.
+    The model can then use the tokens corresponding to the learned patterns from the tokenizer to train and predict SMILES.
     This can be considered a way of pre-training the model.
     A few key question to be considered with this method are: 
     (1) How does using \ac{BPE} impact performance?
