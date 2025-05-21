@@ -33,7 +33,7 @@ At inference time, when the model is sampled, the model does not get this help a
 This is often referred to as exposure bias \cite{schmidt2019generalization}.
 The previously discussed imbalance of the training set only makes this bias worse, by training on these frequently occurring token combinations.
 This severely hinders the generalization of the model.
-An example of this exposure bias can be clearly seen in the results from the hyperparameter gridsearch (figure \ref{fig:gridsearch_vs_paper}), where a model with a lower validation loss performed worse at inference time.
+An example of this exposure bias can be clearly seen in the results from the hyperparameter gridsearch (figure \ref{fig:gridsearch_vs_paper}), where a model with a lower validation loss performed after sampling.
 The loss has this teacher forced advantage, while the metrics calculated on the sampled predictions do not.
 Because all models trained in this thesis are optimized for validation loss, it can be questioned if they have been overfit on these teacher forced training molecules.
 
@@ -57,18 +57,23 @@ Hence, to compare models, and decide which is better at predicting de novo molec
 
 \section{Results Experiments}
 
-Most of the results from the experiments in this thesis show no clear improvements from the methods used by the de novo models from MassSpecGym.
+Most of the results from the experiments in this thesis show no clear improvements over the methods used by the de novo models from MassSpecGym.
 However, many conclusions can still be drawn from these results.
 In hindsight, some experiments could still be improved upon by taking the discussion points from \ref{sec:overfitting} into account.
-The following sections discuss the results and improvements for each experiment.
+The following sections discuss the results and possible improvements for each experiment.
 
 \subsection{Samplers benchmark}
 
-- Only on one model, can be different for different mol repr
-- Model used was overfitted, influence on experiment
-- Samplers do have noticeable influence, different samplers outperform for different evaluation settings
+The main conclusion from the samplers benchmark is that different samplers can perform better with different evaluation settings.
+The deterministic samplers performed best with top-1 evaluation, showing their capability to predict valid molecules.
+The probabilistic samplers, on the other hand, predicted more varying, sometimes invalid, molecules, which allowed them to outperform the deterministic samplers with a top-10 evaluation setting.
 
-- Beam search: Score function using loss is not optimal, exposure bias
+When predicting molecular structures from \ac{MS/MS}, randomness is not a desired property as there is only one correct molecular structure.
+Even though multiple SMILES can represent the same molecular structure, overall we only want the correct atoms and bonds to be predicted.
+A possible explanation for this phenomenon is that, on average, a bit of randomness could somewhat overcome the exposure bias from the overfitted model.
+
+In later experiments, it shows that the model used for this experiment was severely overfit on the training SMILES.
+This experiment should in an ideal case also have to be repeated for a model that is able to predict more de novo molecules (e.g. SELFIES model).
 
 \subsection{\ac{BPE} as pretraining}
 
