@@ -3,60 +3,58 @@
 
 Intro discussion ? Poor performance?
 
-\section{overfitting}
+\section{Overfitting}
 
 A recurring problem for the models trained for this thesis is the number of predictions that are identical to a label found in the training set.
 When this occurs, it shows that a model is not able to achieve the task of predicting a de novo molecular representation from \ac{MS/MS}, but only repeats the data is has been trained with.
 There are a few contributing factors to this overfitting problem with the setup used in this thesis.
 
-\begin{description}
-    \item[Duplicate training labels]
-            As mentioned in the paper from MassSpecGym \cite{bushuiev2024massspecgym}, the dataset is a collection of the most qualitative annotated open-source mass spectrometry datasets.
-            Even though a lot of filtering was performed after thorough quality control, the amount of duplicate molecules is significant.
-            Figure \ref{fig:duplicate_smiles} shows the amount of SMILES that have multiple occurrences in the training set. Notice the logarithmic y-axis for readability.
-            Even though 84\% of unique molecules have 10 occurrences or less, some molecules are noticeably more present in the training set, with one molecule being present 477 times in the training set.
-            This imbalance does not necessarily reflect the real-world imbalance of molecules as it is caused by the use of imbalanced datasets.
-            This causes the models to be trained with a bias towards these more frequent occurring molecules in the training set.
-            This imbalance is also present in the validation (and test) set, where the most frequently occurring molecule accounts for 2.7\% (out of the almost 20.000 entries) of the validation data.
-            Because of this imbalance, the models will be evaluated with a bias towards these more abundant molecules.
-    \begin{figure}[h]
-        \centering
-        \includegraphics[width=0.6\textwidth]{figures/discussion/duplicate_smiles_training_set.png}
-        \caption{distribution of duplicate SMILES in MassSpecGym's training set with a logarithmic scale}.
-        \label{fig:duplicate_smiles}
-    \end{figure}
+\subsection{Duplicate training labels}
+As mentioned in the paper from MassSpecGym \cite{bushuiev2024massspecgym}, the dataset is a collection of the most qualitative annotated open-source mass spectrometry datasets.
+Even though a lot of filtering was performed after thorough quality control, the amount of duplicate molecules is significant.
+Figure \ref{fig:duplicate_smiles} shows the amount of SMILES that have multiple occurrences in the training set. Notice the logarithmic y-axis for readability.
+Even though 84\% of unique molecules have 10 occurrences or less, some molecules are noticeably more present in the training set, with one molecule being present 477 times in the training set.
+This imbalance does not necessarily reflect the real-world imbalance of molecules as it is caused by the use of imbalanced datasets.
+This causes the models to be trained with a bias towards these more frequent occurring molecules in the training set.
+This imbalance is also present in the validation (and test) set, where the most frequently occurring molecule accounts for 2.7\% (out of the almost 20.000 entries) of the validation data.
+Because of this imbalance, the models will be evaluated with a bias towards these more abundant molecules.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/discussion/duplicate_smiles_training_set.png}
+    \caption{distribution of duplicate SMILES in MassSpecGym's training set with a logarithmic scale}.
+    \label{fig:duplicate_smiles}
+\end{figure}
 
-    \item[Exposure bias] During training, a teacher forcing approach is used, where only the ground truth tokens are used to generate the next token iteratively.
-    At inference time, when the model is sampled, the model does not get this help and has to rely on its own previous (incorrect) predictions.
-    This is often referred to as exposure bias \cite{schmidt2019generalization}.
-    The previously discussed imbalance of the training set only makes this bias worse, by training on these frequently occurring token combinations.
-    This severely hinders the generalization of the model.
-    An example of this exposure bias can be clearly seen in the results from the hyperparameter gridsearch (figure \ref{fig:gridsearch_vs_paper}), where a model with a lower validation loss performed worse at inference time.
-    The loss has this teacher forced advantage, while the metrics calculated on the sampled predictions do not.
-    Because all models trained in this thesis are optimized for validation loss, it can be questioned if they have been overfit on these teacher forced predictions.
-    
-    \item[Evaluation metrics] The metric that best describes how close close a prediction is to the actual molecule is the \ac{MCES} distance.
-    Problem: Does not show overfitting, even empty predictions can have low MCES distance...
-\end{description}
+\subsection{Exposure bias}
 
+During training, a teacher forcing approach is used, where only the ground truth tokens are used to generate the next token iteratively.
+At inference time, when the model is sampled, the model does not get this help and has to rely on its own previous (incorrect) predictions.
+This is often referred to as exposure bias \cite{schmidt2019generalization}.
+The previously discussed imbalance of the training set only makes this bias worse, by training on these frequently occurring token combinations.
+This severely hinders the generalization of the model.
+An example of this exposure bias can be clearly seen in the results from the hyperparameter gridsearch (figure \ref{fig:gridsearch_vs_paper}), where a model with a lower validation loss performed worse at inference time.
+The loss has this teacher forced advantage, while the metrics calculated on the sampled predictions do not.
+Because all models trained in this thesis are optimized for validation loss, it can be questioned if they have been overfit on these teacher forced predictions.
 
+\subsection{Evaluation metrics}
+The two metrics used to evaluate similarity of a molecular prediction, Tanimoto similarity and \ac{MCES} distance, are somewhat flawed.
+As explained in section \ref{sec:tan_sim}, the Tanimoto similarity uses molecular fingerprints that are unable to store all structural information.
+When the predicted structure is converted to a molecular fingerprint, some structural information is lost.
+The prediction will thus not be evaluated completely.
+The \ac{MCES} distance on the other hand does evaluate the whole molecular structure, but can in some cases behave sub-optimal.
+Looking at the formula in section \ref{sec:mces_dist}, when the evaluation molecules have few edges in their molecular graphs, a model could instead of finding the \acf{MCES}, just minimize the edges in its prediction.
+In an extreme case, where the model only predicts nothing (e.g. empty SMILES), the MCES distance will be equal to the number of edges of the ground-truth molecule.
+While during training the model does not have access to the MCES distance and will thus probability not reach this extreme case, it does question if some \ac{MCES} distances have been sugarcoated by this flaw.
 
-
-
-
-%\section{Retraining MassSpecGym}
-- loss function not optimal to determine model performance
-- The SMILES validity is something the loss function can not measure.
-
-overfitting:
-    - dataset labels unbalanced
-    - MCES distance does not show overfitting
-    - teacher forcing + loss does not allow the model to predict synonym smiles
-
+Another problem with both metrics is that they are unable to distinguish between de novo and training molecules.
+This can cause problems when the models are not powerful enough to outperform overfitted models.
+A model that, instead of predicting de novo molecules, would just rank the training molecules and return the most similar ones (similar to frequently used database lookup methods), could appear relatively good at predicting de novo molecules when only the \ac{MCES} distance and Tanimoto similarity are considered.
+Only the number of novel molecules accurately shows if a model can generate de novo molecules.
+Hence, to compare models, and decide which is better at predicting de novo molecules form \ac{MS/MS}, multiple metrics have to be considered.
 
 
 
-\section{Experiments}
+\section{Results Experiments}
 
 SMILES veel overfitting, invloed op experimenten?
 

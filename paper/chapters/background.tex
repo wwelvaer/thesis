@@ -220,6 +220,8 @@ Quantifying the similarity of molecular representations is crucial for evaluatin
 A distinction also needs to be made between structural similarity and property similarity. Property similarity is often the preferred metric in biological settings that are more interested in the properties of the molecules \cite{safizadeh2021improving}. Because this thesis is about predicting molecular structures, only structural similarity metrics are discussed.
 
 \subsection{Tanimoto Similarity}
+\label{sec:tan_sim}
+
 The molecular structure can't be directly derived from fingerprints because they don't store complex structural information \cite{kretschmer2023small}. This is a problem for calculating the similarity of the underlying molecular structure of two fingerprints, as we can't construct molecular graphs to calculate an exact structural similarity metric. We have to resort to similarity metrics on fingerprints themselves that would estimate the structural similarity.
 
 Molecular fingerprints are bitvector representations. A naive way to compare two bitvectors would be to calculate the sum of the logical 'and' operation divided by the length of the bitvector, in essence counting the number of bits that are the same. This would only work if the value of each bit has no correlation with any other bit and each bit in the bitvector has an equal occurrence probability. This is not true for molecular fingerprints. They are known to be very sparse and have a non-uniform distribution. For example: Figure \ref{fig:bit_frequency_fingerprints} shows the activation frequency per bit position for a typical fingerprint. It is clear that these are not uniformly distributed with some bits having a very high activation frequency (above 70\%) and a few bits not even being active once. It is clear that the activation frequency of most bits is very low, causing the fingerprints to be sparse.
@@ -243,6 +245,8 @@ By calculating the Tanimoto similarity of structural fingerprints (for which the
 \textcite{bajusz2015tanimoto} have benchmarked different metrics and shown that the Tanimoto similarity metric should be considered as one of the best similarity metrics on molecular fingerprints. It is still not an optimal molecular similarity metric for when the exact structures are known, as fingerprints are unable to store enough structural information. By converting the exact structure to a fingerprint there is a loss of information \cite{kretschmer2023small}.
 
 \subsection{MCES Distance}
+\label{sec:mces_dist}
+
 For molecular representation where we can accurately extract the molecular structure (InchI, SMILES, DeepSMILES, SELFIES), we can construct a molecular graph of the molecule \cite{wigh2022review}. Molecular graphs are labeled graphs where edges describe bonds and nodes describe atoms \cite{kretschmer2023small}. From two molecular graphs, a graphical similarity metric can then be calculated to get an accurate molecular similarity metric. 
 
 One such graphical metric that extrapolates well to chemical structure similarity is the \ac{MCES} distance \cite{kretschmer2023small}. The MCES distance of two graphs A and B is defined as follows:
