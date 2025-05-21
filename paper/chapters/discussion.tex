@@ -4,6 +4,7 @@
 Intro discussion ? Poor performance?
 
 \section{Overfitting}
+\label{sec:overfitting}
 
 A recurring problem for the models trained for this thesis is the number of predictions that are identical to a label found in the training set.
 When this occurs, it shows that a model is not able to achieve the task of predicting a de novo molecular representation from \ac{MS/MS}, but only repeats the data is has been trained with.
@@ -34,7 +35,7 @@ The previously discussed imbalance of the training set only makes this bias wors
 This severely hinders the generalization of the model.
 An example of this exposure bias can be clearly seen in the results from the hyperparameter gridsearch (figure \ref{fig:gridsearch_vs_paper}), where a model with a lower validation loss performed worse at inference time.
 The loss has this teacher forced advantage, while the metrics calculated on the sampled predictions do not.
-Because all models trained in this thesis are optimized for validation loss, it can be questioned if they have been overfit on these teacher forced predictions.
+Because all models trained in this thesis are optimized for validation loss, it can be questioned if they have been overfit on these teacher forced training molecules.
 
 \subsection{Evaluation metrics}
 The two metrics used to evaluate similarity of a molecular prediction, Tanimoto similarity and \ac{MCES} distance, are somewhat flawed.
@@ -56,26 +57,42 @@ Hence, to compare models, and decide which is better at predicting de novo molec
 
 \section{Results Experiments}
 
-SMILES veel overfitting, invloed op experimenten?
+Most of the results from the experiments in this thesis show no clear improvements from the methods used by the de novo models from MassSpecGym.
+However, many conclusions can still be drawn from these results.
+In hindsight, some experiments could still be improved upon by taking the discussion points from \ref{sec:overfitting} into account.
+The following sections discuss the results and improvements for each experiment.
 
 \subsection{Samplers benchmark}
 
-- Beam search: Score function using loss is not optimal
+- Only on one model, can be different for different mol repr
+- Model used was overfitted, influence on experiment
+- Samplers do have noticeable influence, different samplers outperform for different evaluation settings
+
+- Beam search: Score function using loss is not optimal, exposure bias
+
 \subsection{\ac{BPE} as pretraining}
+
+BPE influences how many tokens need to be predicted, less tokens is easier for model
+BPE considerably decreases number of novel predictions
+Balance between overfitting and decreasing prediction token length could maybe be found by tuning the algorithm's parameters
 
 
 \subsection{Augmentation}
+
+- again only one model used which experienced overfitting
 Only BPE encoded SMILES models, overfitting might influence results
 
-\subsection{SMILES augmentation}
+\subsubsection*{SMILES augmentation}
 - SMILES from molecular graph is deterministic, evaluation is done on only these deterministic outputs, by randomizing the SMILES with synonyms it confuses the model and will perform worse on the evaluated SMILES.
 - model not powerfull enough
 - BPE does not help because augmented patterns use more tokens
 - less augmentation
+- could maybe be usefull to replace the duplicate SMILES
 
-\subsection{Spectral augmentation}
+\subsubsection*{Spectral augmentation}
 
-Could be used to fix mulecule imbalance, where only the least occurring molecules in the training set are augmented
+Confirms DreaMS results
+Could be used to fix molecule imbalance, where only the least occurring molecules in the training set are augmented
 
 
 \subsection{Molecular representations benchmark}
@@ -85,9 +102,12 @@ samplers chosen based of SMILES results
 
 3 headed inchi could be improved by supplying the output of the previous decoder to the next, to ensure they know what molecule it is trying to predict
 
+explain DeepSMILES BPE flaw?
+
 SELFIES can benefit from BPE because some tokens have different meaning in context of rings and groups, without the model overfitting
 
 \section{Future for de novo structure prediction}
 
-- string based representations not suited, reference graph based paper
+All models still severely struggle to predict only a few molecular structures completely from the validation set.
 - autoregressive models not suited for molecular structure generation by exposure bias
+- string based representations not suited, reference graph based paper
