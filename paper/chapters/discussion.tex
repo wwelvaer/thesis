@@ -54,12 +54,11 @@ Only the number of novel molecules accurately shows if a model can generate de n
 Hence, to compare models, and decide which is better at predicting de novo molecules form \ac{MS/MS}, multiple metrics have to be considered.
 
 
-
 \section{Results Experiments}
 
 Most of the results from the experiments in this thesis show no clear improvements over the methods used by the de novo models from MassSpecGym.
 However, many conclusions can still be drawn from these results.
-In hindsight, some experiments could still be improved upon by taking the discussion points from \ref{sec:overfitting} into account.
+In hindsight, some experiments could still be improved upon by taking the results and discussion points from \ref{sec:overfitting} into account.
 The following sections discuss the results and possible improvements for each experiment.
 
 \subsection{Samplers benchmark}
@@ -72,15 +71,25 @@ When predicting molecular structures from \ac{MS/MS}, randomness is not a desire
 Even though multiple SMILES can represent the same molecular structure, overall we only want the correct atoms and bonds to be predicted.
 A possible explanation for this phenomenon is that, on average, a bit of randomness could somewhat overcome the exposure bias from the overfitted model.
 
-In later experiments, it shows that the model used for this experiment was severely overfit on the training SMILES.
+In later experiments, it shows that the SMILES model used for this experiment was severely overfit on the training SMILES.
 This experiment should in an ideal case also have to be repeated for a model that is able to predict more de novo molecules (e.g. SELFIES model).
 
 \subsection{\ac{BPE} as pretraining}
 
-BPE influences how many tokens need to be predicted, less tokens is easier for model
-BPE considerably decreases number of novel predictions
-Balance between overfitting and decreasing prediction token length could maybe be found by tuning the algorithm's parameters
+Using \ac{BPE} increases the number of valid predictions at the cost of novel predictions. 
+This conclusion is again confirmed by the molecular representations experiment in figure \ref{fig:representations}.
+The main advantage is that by grouping multiple tokens as one, \ac{BPE} decreases the number of tokens the model has to predict.
+When the model has less tokens to predict, it will make less mistakes, leading to more valid molecules.
+In contrast, it will favour grouped tokens seen in the training data, and by having less tokens to predict, it will more often lead to predictions from the training set.
+When using \ac{BPE}, the parameters of the algorithm should be tuned such that a balance between performance and minimal overfitting could be found.
 
+While the results show that computing the \ac{BPE} on the 118M dataset did not improve the model's performance compared to the 4M dataset, even though it has almost 30 times more SMILES,
+the quality of this dataset is considerably worse.
+As explained in the MassSpecGym paper, the 118M dataset consists of all the available data from PubChem. 
+No quality control was conducted for this dataset, which allows for an unrealistic distribution of chemical classes in the dataset.
+An overrepresentation of one chemical class could severely influence the patterns found by the \ac{BPE} algorithm.
+In contrast, the 4M dataset does have a controlled representation of multiple chemical classes.
+This shows that quality is preferred over quantity.
 
 \subsection{Augmentation}
 
