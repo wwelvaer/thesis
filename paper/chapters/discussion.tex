@@ -47,7 +47,7 @@ The prediction will thus not be evaluated completely.
 The \ac{MCES} distance on the other hand does evaluate the whole molecular structure, but can in some cases behave sub-optimal.
 Looking at the formula in section \ref{sec:mces_dist}, when the evaluation molecules have few edges in their molecular graphs, a model could instead of finding the \acf{MCES}, just minimize the edges in its prediction.
 In an extreme case, where the model only predicts nothing (e.g. empty SMILES), the MCES distance will be equal to the number of edges of the ground-truth molecule.
-Data om te bewijzen hoeveel edges smiles labels hebben in dataset?
+Data om te bewijzen hoeveel edges smiles labels hebben in dataset? TODO INSERT HISTOGRAM
 While during training the model does not have access to the MCES distance and will thus probability not reach this extreme case, it does question if some \ac{MCES} distances have been sugarcoated by this flaw.
 
 Another problem with both metrics is that they are unable to distinguish between de novo and training molecules.
@@ -157,7 +157,11 @@ To improve this model, these decoders should have a way to pass attention, to pr
 
 \section{Future for de novo structure prediction}
 
+
+
 Multiple token prediction voor expose bias tegen te gaan
+
+
 
 All models still severely struggle to predict only a few molecular structures completely from the validation set.
 - autoregressive models not suited for molecular structure generation by exposure bias
