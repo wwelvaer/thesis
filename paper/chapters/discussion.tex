@@ -124,20 +124,36 @@ The drawback is, however, that the original canonicalized SMILES would be severe
 \subsubsection*{Spectral augmentation}
 
 While figure \ref{fig:spectral_augm} shows no remarkable performance improvement, using a bit of augmented spectra does noticeably improve the number of valid and novel predictions.
-Spectral augmentation thus proves to be useful to combat overfitting, when used moderately.
+Spectral augmentation thus proves to be useful to combat overfitting and increase generalization, when used moderately.
 
-A possible improvement for this experiment would be to, instead of randomly augmenting spectra, try to fix the imbalance from the training set by augmenting the spectra of the underrepresented SMILES.
+A possible improvement for this experiment would be to, instead of randomly augmenting 20\% of the spectra, try to fix the imbalance from the training set by augmenting the spectra of the underrepresented SMILES.
 
 \subsection{Molecular representations benchmark}
 
-Models not optimized for hyperparameters
-samplers chosen based of SMILES results
+From the results in figure \ref{fig:representations}, the SMILES model achieved the best MCES distance and Tanimoto similarity, while the SELFIES model seems to have the most novel predictions.
+The modifications for autoregressive models implemented with DeepSMILES, do not seem to live up to expectations, performing worse than SMILES.
+SELFIES is the only molecular representation from the benchmark where the number of novel prediction does not substantially drop when using \ac{BPE}.
+This could be explained by the fact that some SELFIES tokens can have a different meaning in context of rings and branches. 
+For example, a token that follows a branch token, only denotes the length of the branch, the original chemical meaning of the token does not matter for the prediction.
+When this combination of branch and other token is stored with \ac{BPE}, the model cannot get confused by the original meaning of the second token.
+The SELFIES alphabet is also much larger than the SMILES alphabet, which causes the sequence of tokens to be more diverse, reducing overfitting.
+Because each SELFIES stores a lot of information, less tokens are needed to describe molecular structures, which remarkably does not seem to affect the number of novel predictions.
 
-3 headed inchi could be improved by supplying the output of the previous decoder to the next, to ensure they know what molecule it is trying to predict
+Overall, SELFIES seems to be the most robust molecular representation.
+The reason SELFIES and DeepSMILES do not outperform the SMILES model could be due to multiple reasons.
+(1) The optimal \ac{BPE} SMILES hyperparameters were used to train all the models with different molecular representations.
+This could affect the performance compared to the SMILES model, as these hyperparameters might not be optimal for the other models.
+In an ideal case, a hyperparameter search would have to be conducted to accurately compare the best performance for each model.
+(2) The samplers for each evaluation setting were chosen base on the results from the sampler benchmark.
+These samplers again used a \ac{BPE} SMILES model. Even though a temperature search was performed for the naive sampler.
+The samplers used for each evaluation setting could not be optimal for models with different molecular representations.
+The SMILES \ac{BPE} model hence had a noticeable advantage in this experiment, it is then only logical that it achieved the best performance.
 
-explain DeepSMILES BPE flaw?
-
-SELFIES can benefit from BPE because some tokens have different meaning in context of rings and groups, without the model overfitting
+The InchI representation is not suited for autoregressive prediction.
+The idea for the multiple decoder model was to divide the prediction problem by predicting the layers from InchI separately.
+Unfortunately, while the decoders did achieve at predicting valid predictions for their corresponding layer, the strict InchI structure needed them to exactly describe the same prediction.
+They did not manage to synchronize their predictions which caused the combined InchI to be invalid.
+To improve this model, these decoders should have a way to pass attention, to predict the same molecular structure.
 
 \section{Future for de novo structure prediction}
 

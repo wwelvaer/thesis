@@ -251,6 +251,7 @@ This method of augmentation, when moderately used, clearly seems to help the mod
 
 Different molecular representations can be used to predict the structure of a molecule.
 This experiment benchmarks the string-based molecular representations for the de novo structure prediction task.
+InchIkey is the only representation discussed in section \ref{sec:molrepr} that is not used to train a model, as predicting hash keys is not possible.
 All models were trained with the same hyperparameters.
 Because tokenizers with vocabulary pre-computed with \ac{BPE} have shown to influence performance, for each molecular representation two models were trained.
 One model used a Byte-pair encoded tokenizer, the other used a basic character tokenizer.
