@@ -203,15 +203,15 @@ The number of novel predictions does put these results in doubt, questioning the
 
 \section{Augmentation}
 
-The influence of different augmentation methods was measured by retraining MassSpecGym's SMILES de novo model with different augmented datasets.
-For each of these models, along with the baseline model without augmentation, the MCES distance, fraction of valid predictions and fraction of novel predictions were evaluated on the validation set.
-Again, for the top-1 setting a greedy sampler was used and a temperature search of the naive sampler was performed for top-10.
-Full results for the top-10 temperature searches can be found in the appendix at section \ref{sec:temp_search_appendix}.
+The influence of different data augmentation methods was measured by retraining MassSpecGym's SMILES de novo model with different augmented datasets.
+For each of these models, along with the baseline model without augmentation, the MCES distance, Tanimoto similarity, fraction of valid predictions and fraction of novel predictions were evaluated on the validation set.
+As before, a greedy sampler was used for the top-1 setting, while a temperature search was conducted with the naive sampler for the top-10 setting.
+Full results for the naive top-10 temperature search can be found in the appendix section \ref{sec:temp_search_appendix}.
 
 \subsection{SMILES augmentation}
 
-SMILES labels can be augmented by calculating the synonyms of these SMILES that represent the same molecular graphs.
-The dataset can then be duplicated by copying the spectra and using the synonyms as labels.
+Labeled spectra can be augmented by calculating synonyms of the SMILES label that represent the same molecular graphs.
+The dataset can then be duplicated by copying the spectra and using a SMILES synonym as label.
 This should allow the model to be more robust against repeated SMILES in the training set.
 For this experiment three models were trained, for which the whole training set was duplicated once, twice and five times with SMILES synonyms (referred as 1x synonym, 2x synonyms and 5x synonyms respectively in the results).
 For all these models the original training data with the original SMILES was kept in the training set.
@@ -220,25 +220,25 @@ The full naive sampler's top-10 temperature search results can be found in the a
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.8\textwidth]{figures/results/smiles_augmentation_with_tanimoto.png}
+    \includegraphics[width=0.79\textwidth]{figures/results/smiles_augmentation_with_tanimoto.png}
     \caption{Evaluation on the validation set of SMILES models trained with different SMILES augmented datasets}
     \label{fig:smiles_augm}
 \end{figure}
 
 From figure \ref{fig:smiles_augm} it is clear that SMILES augmentation does not seem to improve the de novo SMILES model from MassSpecGym.
-The MCES distance and number of valid predictions get worse when more augmented SMILES are used for training.
+The MCES distance, Tanimoto similarity and number of valid predictions get worse when more augmented SMILES are used for training.
 Only the number of novel molecules, top-1 predicted, seems to increase by using some augmentation.
 Too much augmentation reduces this again.
 
-Overall, MassSpecGym's de novo SMILES model does not seem robust/powerful enough to handle any SMILES augmented data.
+Overall, MassSpecGym's de novo SMILES model does not seem to benefit from any SMILES augmented data.
 
 \subsection{Spectral augmentation}
 
-By mimicking differing precursor masses from the input samples through spectral shifts, the input spectra can be augmented.
-The dataset was augmented by applying random mz-shifts to spectra and copying their SMILES labels.
+Input spectra can be augmented by simulating variations in precursor masses through spectral shifts.
+Labeled spectra were augmented by applying the same random mz-shift to the peaks of a spectrum and copying its SMILES label.
 Two models were trained for this experiments, with $20\%$ and $100\%$ of the training spectra augmented (referred as $20\%$ mz shift augm. and $100\%$ mz shift augm. respectively in the results).
 Again, the original training data is kept in the training set.
-Figure \ref{fig:spectral_augm} shows the evaluated results of these models using different evaluation metrics and settings.
+Figure \ref{fig:spectral_augm} shows the evaluated results of these models using different metrics and evaluation settings.
 As usual, the full naive samplers top-10 temperature search results can be found in the appendix figure \ref{fig:spectral_augmentation_appendix}.
 
 \begin{figure}[h]
@@ -248,8 +248,8 @@ As usual, the full naive samplers top-10 temperature search results can be found
     \label{fig:spectral_augm}
 \end{figure}
 
-In contrast to the previous augmentation method, the spectral augmentation does seem to help the de novo SMILES model from MassSpecGym.
-While there are no significant improvements looking at the MCES distance, the $20\%$ augmented model is able to predict more valid and especially more novel molecules.
+In contrast to the previous augmentation method, spectral augmentation does seem to help the de novo SMILES model from MassSpecGym.
+While there are no significant improvements looking at the MCES distance and Tanimoto similarity, the $20\%$ augmented model is able to predict more valid and especially more novel molecules.
 Too much augmentation, again, hinders performance as the original data gets drowned in augmented data.
 
 This method of augmentation, when moderately used, clearly seems to help the model be less prone to overfitting, as the top-1 greedy sampler is able to predict more than $20\%$ more novel molecules. 
@@ -257,29 +257,31 @@ This method of augmentation, when moderately used, clearly seems to help the mod
 \section{Molecular representations benchmark}
 
 Different molecular representations can be used to predict the structure of a molecule.
-This experiment benchmarks the string-based molecular representations for the de novo structure prediction task.
+This experiment benchmarks the string-based molecular representations for the de novo structure prediction from \ac{MS/MS} task.
 InchIkey is the only representation discussed in section \ref{sec:molrepr} that is not used to train a model, as predicting hash keys is not possible.
 All models were trained with the same hyperparameters.
-Because tokenizers with vocabulary pre-computed with \ac{BPE} have shown to influence performance, for each molecular representation two models were trained.
-One model used a Byte-pair encoded tokenizer, the other used a basic character tokenizer.
-For all these models, a greedy sampler was used to evaluate the top-1 setting, while a temperature search was performed for the top-10 naive sampler.
+Because tokenizers with a byte-pair encoded vocabulary have shown to influence performance, for each molecular representation two models were trained.
+One model used a byte-pair encoded tokenizer, the other used a basic character tokenizer.
+For all these models, a greedy sampler was used to evaluate the top-1 setting, while a temperature search was performed for the naive sampler with top-10 evaluation.
 Each molecular representation was thus evaluated four times.
-The full results for the naive top-10 evaluation with the different temperatures can be found in the appendix figure \ref{fig:representations_appendix}.
-Figure \ref{fig:representations} shows the MCES distance, fraction of valid predictions and fraction of novel predictions of the models trained on different molecular representations.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=1.0\textwidth]{figures/results/representations_with_tanimoto.png}
+    \includegraphics[width=0.8\textwidth]{figures/results/representations_with_tanimoto.png}
     \caption{Evaluation on the validation set of models trained with different molecular representations}
     \label{fig:representations}
 \end{figure}
 
-For the top-1 evaluation setting, SMILES outperforms the other molecular representations according to the MCES distance seen in figure \ref{fig:representations}.
-SMILES and SELFIES seem to perform the best with top-10 evaluation, with their MCES distances being almost the same.
+The full results for the naive top-10 evaluation with the different temperatures can be found in the appendix figure \ref{fig:representations_appendix}.
+Figure \ref{fig:representations} shows the MCES distance, Tanimoto similarity, fraction of valid predictions and fraction of novel predictions of the predictions from models trained on different molecular representations.
+
+For the top-1 evaluation setting, SMILES outperforms the other molecular representations according to the MCES distance and Tanimoto similarity seen in figure \ref{fig:representations}.
+SMILES and SELFIES seem to perform the best for the top-10 evaluation according to their MCES distances, the Tanimoto similarity does not reflect this however, with the SMILES models outperforming the SELFIES models.
+
 The models trained with SELFIES predicted the most valid predictions, as this is an inherent property of SELFIES, but noticeably also predicted the most novel molecules.
 This indicates that the SELFIES models are less prone to overfitting on the training labels.
 
-While DeepSMILES is closely related to SMILES with only slight modifications to reduce the chance of invalid predictions through syntax errors, it noticeably performs worse than SMILES, even having less valid predictions with top-10 evaluation.
+While DeepSMILES is closely related to SMILES with only slight modifications to reduce the chance of invalid predictions through syntax errors, it noticeably performs worse than SMILES, even having noticeably less valid predictions with top-10 evaluation.
 The models trained using DeepSMILES are thus more prone to chemical errors as (almost) no syntax errors are possible.
 An example of a prediction with a chemical error made by a DeepSMILES model can be seen in figure \ref{fig:invalid_pred}, where five bonds on one carbon atom are present, which is not possible in a stable environment.
 The improvements DeepSMILES introduces over SMILES to combat invalid predictions for autoregressive generation seem to have the opposite results for de novo structure prediction, by introducing more chemical errors.
@@ -292,8 +294,8 @@ The improvements DeepSMILES introduces over SMILES to combat invalid predictions
 
 Out of the four representations benchmarked, InchI clearly shows to be the least fit for autoregressive generation, with most of its predictions being invalid.
 This is caused by the fact that InchI has a strict layered structure to ensure its desired properties, which the models struggle to predict correctly.
-When the model does succeed to predict an InchI with a valid syntax it almost always was present in the training set, showing heavy signs of overfitting.
-To help the model understand the different layers of the InchI representation, a model was trained with a different decoder for each relevant layer. 
+When the model does succeed to predict an InchI with a valid syntax, it almost always was present in the training set, showing heavy signs of overfitting.
+To help the model understand the different layers of the InchI representation, a model was trained with a different decoder for each relevant InchI layer. 
 The results for this model can be found in the appendix figure \ref{fig:layered_inchi}.
 This model was only able to predict a few valid predictions and struggled to synchronize the outputs of the different decoders.
 The poor performance of InchI for this task is expected as the molecular representation was not designed for structure prediction.
@@ -302,4 +304,4 @@ The same conclusions from the \ac{BPE} experiment can be drawn for this experime
 Only for the SELFIES top-10 evaluation, using \ac{BPE} also improves the number of novel predictions.
 
 Overall, in this experiment, SMILES shows to be the best molecular representation when a top-1 evaluation is used.
-Taking the amount of novel predictions into account, SELFIES performs the best for top-10 evaluation.
+Taking the amount of novel predictions into account, SELFIES could also be considered for top-10 evaluation.
