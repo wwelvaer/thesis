@@ -1,15 +1,17 @@
 \chapter{Results}
 \label{chap:results}
 
+The following sections briefly describe the experimental setup, before showing the results for each experiment discussed in chapter \ref{chap:aims}.
+
 
 \section{Hyperparameter gridsearch}
 
-The extended search grid for the hyperparameters of the retrained SMILES models, along with the results from the gridsearch of MassSpecGym, can be found in table \ref{tab:gridsearch}.
-The hyperparameter combination for which the trained model has lowest validation loss is denoted in bold.
+The extended hyperparameter search grid for the retrained SMILES models, along with MassSpecGym's grid search results, is presented in Table \ref{tab:gridsearch}.
+The hyperparameter combination that achieved the lowest validation loss is highlighted in bold.
 
 \begin{table}[h]
 	\caption{
-		SMILES transformer, Gridsearch MassSpecGym vs Gridsearch from this Thesis (lowest validation loss models in bold)
+		Gridsearch MassSpecGym vs Gridsearch Thesis for the de novo SMILES transformer (lowest validation loss models in bold)
 	}
     \resizebox{\textwidth}{!}{
 	\begin{tabular}{p{6cm}W{c}{4cm}W{c}{4cm}}
@@ -28,13 +30,13 @@ The hyperparameter combination for which the trained model has lowest validation
 	\label{tab:gridsearch}
 \end{table}
 
-By retraining with the extended search grid, several models were found that outperformed the retrained model with the best hyperparameter combination from MassSpecGym, when comparing validation loss.
+By retraining with the extended search grid, several models were found that outperformed the retrained model with the best hyperparameter combination from MassSpecGym, according to the validation loss.
 Note that the number of predictions is kept constant as this does not influence the loss.
-The hyperparameters from the model with the lowest validation loss differ greatly from the retrained model from MassSpecGym. % 3 keer from?
+There is a substantial difference between the optimal hyperparameters from the retrained gridsearch and MassSpecGym's results
 Because the loss function does not accurately describe the model's ability to predict de novo molecules from \ac{MS/MS},
-a naive sampler (that just iteratively samplers from the model's output distribution) was used to predict SMILES on the validation set.
+a naive sampler, that just iteratively samples from the model's output distribution, was used to predict SMILES on the validation set.
 The evaluation of the SMILES predictions from both models using this sampler can be found in figure \ref{fig:gridsearch_vs_paper}.
-The MCES distance on the SMILES and tanimoto similarity on the converted fingerprints are calculated in the strict (top-1) and more relaxed (top-10) settings.
+The \ac{MCES} distance on the SMILES and tanimoto similarity on the converted fingerprints are calculated in the strict (top-1) and more relaxed (top-10) evaluation settings.
 
 \begin{figure}[h]
     \centering
@@ -44,35 +46,35 @@ The MCES distance on the SMILES and tanimoto similarity on the converted fingerp
 \end{figure}
 
 The top-1 and top-10 exact match accuracy for both models is (close to) zero.
-Even though the naive sampler adds a bit of randomization by sampling from the output distribution, the retrained SMILES model from MassSpecGym outperforms the model with the lowest validation loss.
+Even though the naive sampler adds a bit of randomization by sampling from the output distribution, the retrained SMILES model from MassSpecGym outperforms the model with the lowest validation loss on every metric.
 
 A big contributing factor to this performance difference is the fact that the retrained MassSpecGym model is able to predict 10\% more valid SMILES, as invalid SMILES have the maximum MCES distance and zero Tanimoto similarity.
-The validity of the SMILES prediction can rely on the sampler and the temperature scaling of the output distribution.
-Because only a naive sampler with no temperature scaling was used, it is possible that better performance can be extracted from these models using different samplers and temperature scaling.
+The validity of the SMILES prediction could rely on the sampler and the temperature scaling of the output distribution. This is tested in the next experiment.
 
 
 \section{Samplers benchmark}
 
 To test how much temperature scaling and different samplers can influence model performance, different samplers were used to predict the validation set of the model with the lowest loss from table \ref{tab:gridsearch}.
-For this and all further experiments conducted in this thesis, the Tanimoto similarity is directly correlated to the MCES distance and will thus not be shown in the plots.
-All performance differences shown with the MCES distance always show the same relative tanimoto similarities.
+For this experiment, the Tanimoto similarity was directly correlated to the MCES distance and will thus not be shown in the plots.
+All performance differences shown with the MCES distance always show the same relative Tanimoto similarities.
 
-Firstly the temperature scaling influence is measured in figure \ref{fig:naive_and_greedy} for the top-1 and top-10 settings.
-Because this will influence the randomness the sampler's predictions, a simple greedy sampler that always predicts the most likely token is shown as a deterministic baseline.
-This sampler will always predict the same SMILES and can thus only be top-1 evaluated.
+Firstly, the temperature scaling influence is measured on the naive sampler for the top-1 and top-10 settings.
+These results are shown in in figure \ref{fig:naive_and_greedy}.
+Because this temperature difference will influence the randomness of the sampler's predictions, a simple greedy sampler that always predicts the most likely token is shown as a deterministic baseline.
+This greedy sampler will always predict the same SMILES and can thus only be evaluated in the top-1 setting.
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=1.0\textwidth]{figures/results/samplers/naive_and_greedy.png}
-    \caption{Evaluation of the naive and greedy sampler on the validation set}
+    \caption{Evaluation of the naive sampler with different temperatures on the validation set}
     \label{fig:naive_and_greedy}
 \end{figure}
 
 From figure \ref{fig:naive_and_greedy}, it is clear that the naive sampler performs poorly when only one prediction is evaluated (top-1).
 Increasing the randomness (by increasing the temperature) for the top-1 naive sampler, only worsens the MCES distance.
-As expected, the top-1 naive sampler MCES distance converges to the greedy sampler's MCES distance as the temperature approaches zero, as extremely low temperatures force the model to only predict the most likely token.
+As expected, the top-1 naive sampler's MCES distance converges to that of the greedy sampler as the temperature approaches zero, since extremely low temperatures force the model to only predict the most likely token.
 
-The top-10 naive sampler benefits greatly from its randomness, by performing better than the greedy sampler according to the MCES distance.
+The naive sampler benefits greatly from its randomness with top-10 evaluation, by performing better than the greedy sampler according to the MCES distance.
 It shows to have an optimal temperature around $0.7$, for this SMILES model.
 A higher temperature increases the randomness of the sampler too much causing the amount of valid predictions to drop.
 A lower temperature starts to force the predictions towards the greedy sampler.
@@ -84,38 +86,41 @@ The randomness of the naive sampler can be tweaked using samplers such as top-k 
 Because the stochastic samplers only benefit from their randomness when evaluating in a top-10 setting, only these results will be shown on the plots.
 The temperature has shown to influence performance, therefore, a temperature search was conducted for each sampler with different parameters $k$ or $p$, where the optimal temperature (according to the lowest MCES distance) was selected.
 This ensures that only the best results are shown for each the sampler with its parameter.
-For completeness, the top-1, along with the temperature search results can be found in the appendix in section \ref{sec:sampler_full_results}.
+For completeness, the top-1, along with the temperature search results can be found in the appendix section \ref{sec:sampler_full_results}.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=1.0\textwidth]{figures/results/samplers/top-k.png}
+    \includegraphics[width=0.9\textwidth]{figures/results/samplers/top-k.png}
     \caption{Evaluation of the (top-10, temperature optimized) top-k sampler and naive sampler on the validation set.}
     \label{fig:top-k}
 \end{figure}
 
-Figure \ref{fig:top-k} shows that top-k sampling can slightly improve performance when $k > 5$.
-This shows that when the sampler gets forced with a low $k$ it performs slightly worse. 
+Figure \ref{fig:top-k} shows the performance of the top-k sampler with ranging values for $k$, top-10 evaluated on the validation set.
+This figure shows that top-k sampling can slightly improve performance compared to the naive sampler when $k > 5$.
+When the sampler gets limited too much, with a low $k$, it performs slightly worse. 
 Note that the y-axis is scaled for visibility, the improvement is very small.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=1.0\textwidth]{figures/results/samplers/top-p.png}
+    \includegraphics[width=0.9\textwidth]{figures/results/samplers/top-p.png}
     \caption{Evaluation of the (top-10, temperature optimized) top-p sampler and naive sampler on the validation set.}
     \label{fig:top-p}
 \end{figure}
 
+Figure \ref{fig:top-p} shows the performance of the top-p (nucleus) sampler for different values of $p$, top-10 evaluated on the validation set.
 With top-k, limiting the randomization seems to slightly improve performance of the sampler, figure \ref{fig:top-p} shows that this does not hold for the top-p sampler.
-Overall these randomization limiting samplers do not considerably improve the naive sampler.
+Overall, these randomization limiting samplers do not considerably improve the naive sampler's performance.
 
 The stochastic samplers seem to only benefit from the top-10 evaluation setting where the randomness of the sampler plays to its advantage.
 The drawback of this method is the relatively low fraction of valid predictions.
 Figure \ref{fig:naive_and_greedy} shows that in the temperature optimum still only $80\%$ of predictions are valid.
-Because the top-10 setting only evaluates the best prediction, invalid predictions are not punished as long as there is one valid prediction for a spectrum.
+Because the top-10 setting only evaluates the best prediction, invalid predictions are not punished as long as there is one valid prediction per spectrum.
 These samplers are for this reason not suited for top-1 evaluation, where every invalid prediction is punished.
+
 
 \subsection{Deterministic Samplers}
 
-The beam search sampler is another deterministic sampler that improves upon the greedy sampler by increasing its search space to find optimal predictions.
+The beam search sampler is a deterministic sampler that improves upon the greedy sampler by increasing its search space to find optimal predictions.
 Figure \ref{fig:beam-search} shows its performance for different search space sizes (beam widths).
 The length regularization parameter $\alpha$ from the scoring function was also benchmarked for different beam widths but showed to have no influence on performance.
 Only when large values were used ($\alpha > 10$), performance tanked to very poor results.
@@ -131,10 +136,10 @@ Forcing the sampler to predict longer token sequences with parameter $\alpha$ th
 Figure \ref{fig:beam-search} shows that the top-1 and top-10 MCES distance for the beam search sampler improves with increased search space as expected.
 The spike in MCES distance and fraction of valid predictions on the first data point is because the beam width is 1, meaning it is essentially the same as the greedy sampler.
 The top-10 beam search sampler outperforms the greedy sampler but does not come close to the best top-10 naive sampler results. 
-For the top-1 setting, the performance shows to be worse than the greedy sampler.
+For the top-1 evaluation setting, the performance shows to be worse than the greedy sampler.
 This indicates that the scoring function is not optimal for extracting the correct molecular structure, especially with a small search space.
-Because the top-10 evaluation outperforms the top-1, it shows that the prediction with the lowest score is often not the prediction with the lowest MCES distance, indicating the flaw of using the loss in the scoring function.
-The only metric where the beam search sampler seems to outperform the others is the fraction of valid predictions.
+Because the top-10 evaluation outperforms the top-1, it shows that the prediction with the lowest score is often not the prediction with the lowest MCES distance.
+The only metric where the beam search sampler seems to outperform the others is the fraction of valid predictions, where it can always predict at least one valid molecule when the search space is big enough.
 
 These deterministic sampling methods perform best at predicting valid molecules as the fraction of valid predictions is substantially higher than with the optimal stochastic samplers.
 When evaluating in a top-1 setting, where every invalid predictions is punished, these samplers are thus preferred.
@@ -142,6 +147,7 @@ When evaluating in a top-1 setting, where every invalid predictions is punished,
 Overall, from these results, the greedy sampler seems to perform best for the top-1 setting, while the naive sampler excels in the top-10 setting.
 For all the following experiments in this thesis, the greedy and naive samplers are only used for the top-1 and top-10 setting respectively.
 
+% HERE
 \section{\ac{BPE} as pretraining}
 
 To measure the influence of the \acf{BPE} vocabulary computation of the tokenizer on the model's performance, SMILES models were trained with different tokenizers.

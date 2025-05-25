@@ -74,6 +74,9 @@ When predicting molecular structures from \ac{MS/MS}, randomness is not a desire
 Even though multiple SMILES can represent the same molecular structure, overall we only want the correct atoms and bonds to be predicted.
 A possible explanation for this phenomenon is that, on average, a bit of randomness could somewhat overcome the exposure bias from the overfitted model.
 
+The beam search sampler's poor performance could also be linked to the exposure bias or overfitting.
+To verify this the number of novel molecules should have been calculated.
+
 In later experiments, it shows that the SMILES model used for this experiment was severely overfit on the training SMILES.
 This experiment should in an ideal case also have to be repeated for a model that is able to predict more de novo molecules (e.g. SELFIES model).
 
