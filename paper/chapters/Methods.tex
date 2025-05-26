@@ -1,18 +1,19 @@
 \chapter{Methods}
 \label{chap:methods}
 
-All code used for this thesis can be found on \url{https://github.com/wwelvaer/thesis/tree/main/MassSpecGym}
+This chapter goes deeper into the experimental setups used for the experiments, discussed in chapter \ref{chap:aims}.
+All code used for this thesis is available on github (\url{https://github.com/wwelvaer/thesis/tree/main/MassSpecGym}).
 
 \section{Model Training}
 \label{sec:training}
 
-All models trained for this thesis use the dataset described in section \ref{subsec:massspecgymdataset} and follow the de novo model architecture from MassSpecGym~\cite{bushuiev2024massspecgym} closely.
+All models trained for this thesis use the labeled MassSpecGym dataset, described in section \ref{subsec:massspecgymdataset}, and follow the de novo model architecture from MassSpecGym~\cite{bushuiev2024massspecgym} closely.
 Most of the model architecture code was heavily inspired by MassSpecGym's source code.
-It uses the pytorch transformer implementation along with a linear layer before and after the transformer to achieve the requested input and output dimensions.
+It uses the pytorch transformer implementation along with a linear layer before and after the transformer to achieve the requested input and output dimensions for the transformer.
 The training algorithm follows the original transformer implementation from \textcite{vaswani2017attention}.
-The result is a model that predicts the probability distribution of the next token given the peaks of a \ac{MS/MS} spectrum along with an already generated context sequence of tokens.
+This result in a model that predicts the probability distribution of the next token given the peaks of a \ac{MS/MS} spectrum along with an already generated context sequence of tokens.
 Spectrum peaks are provided as a 2d array with two columns. Each row corresponds to one peak in the spectrum with the value in the first column being its m/z value and the second column its intensity.
-The model acts as a classifier for the next token by outputting a vector of length $n$, with $n$ being the number of tokens of the tokenizer.
+The model acts as a classifier for the next token by outputting a vector of length $v$, with $v$ being the number of tokens of the tokenizer.
 
 The exact model used in MassSpecGym suffered from exploding gradients in the first linear layer, which caused the computation to halt by overflow errors.
 Several solutions were implemented to combat this problem.
@@ -32,10 +33,11 @@ Several solutions were implemented to combat this problem.
         \label{fig:bf16}
     \end{figure}
     \item[Removing embedding scaling,]because the order of the peaks from the input spectra does not matter,
-    no positional encodings are added, there is therefor also no need to scale the embedding layer as in the original implementation from \textcite{vaswani2017attention}.
+    no positional encodings are added, there is therefore no need to scale the embedding layer as in the original implementation from \textcite{vaswani2017attention}.
 \end{description}
 
-Removing the embedding scaling was the only method that fully stabilized the training without tanking the performance.
+Most of these methods managed to at least delay the problem of exploding gradients, they did however impact the performance significantly compared to the results from MassSpecGym.
+Removing the embedding scaling was the only method that fully stabilized training without tanking the performance.
 All models described further therefore share the same model architecture as the MassSpecGym de novo models without the embedding scaling step.
 
 Every model was trained with an early stopping criterion of five epochs of non-improving validation loss.
@@ -43,7 +45,7 @@ Every model was trained with an early stopping criterion of five epochs of non-i
 All models were trained on the Ugent \ac{HPC} accelgor cluster using a singular NVIDIA Ampere A100 GPU.
 Training time without sampling was for every model around 2 hours. 
 
-To replicate the results from MassSpecGym, a hyperparameter gridsearch was conducted taking the optimal hyperparameters (= hyperparameters from the model with the lowest validation loss) from the MassSpecGym results into account
+To replicate the results from MassSpecGym, a hyperparameter gridsearch was conducted for the SMILES model, taking the optimal hyperparameters (= hyperparameters from the model with the lowest validation loss) from MassSpecGym's de novo SMILES model results into account
 while also extending the search space further than the previously found optimal values.
 
 \section{Samplers}
@@ -65,12 +67,12 @@ These versions will have the same results and will only differ in execution time
 
 \subsection{Stochastic samplers}
 
-Stochastic autoregressive sampling algorithms introduce some randomness by sampling from the output distribution is some way.
+Stochastic autoregressive sampling algorithms introduce randomness by sampling from the output distribution in a specific manner.
 This allows them to be called multiple times to get different predictions from the same spectra as described before.
 The simplest stochastic sampling algorithm is the naive method described above.
-The logits from the output of the transformer model are first scaled by a temperature parameter to dictate how random the predictions should be.
-A very low temperature will force the model to predict only the token with the highest logit while a very high temperature will force the model to pick a token at random.
-After the logits are scaled, a softmax function maps these to probabilities. These probabilities are sampled by the multinomial function from pytorch.
+The logits from the output of the transformer model are first scaled by a temperature parameter to shift the output distribution.
+A very low temperature will force the model to predict only the token with the highest logit while a very high temperature will force the model to pick a token at random with equal probability.
+After the logits are scaled, a softmax function maps these to probabilities. These probabilities are then sampled by the multinomial function from pytorch.
 This is repeated until the maximum prediction length is reached or every prediction in the batch reached the end token.
 
 To reduce randomness and prevent that tokens with small probabilities can be sampled, we can limit the sampling to the top-$k$ tokens.
@@ -93,17 +95,17 @@ Because there is no randomness in deterministic samplers, the sampling algorithm
 A greedy approach to remove randomness is to always sample the token with the highest probability. Because this is the same as the token with the highest logit, no softmax function is needed.
 Again, this is repeated until the maximum prediction length is reached or every prediction in the batch reached the end token.
 This greedy sampler will be only capable of generating one prediction for a spectrum.
-Other samplers can become identical to the greedy sampler by choice of parameters, e.g. top-$k$ sampler with $k=1$, beam-search with only one beam \ldots
+Other samplers can become identical to the greedy sampler by choice of parameters, e.g. top-$k$ sampler with $k=1$.
 
 To generate multiple predictions for the same spectrum in a deterministic way, beam search can be used.
 It uses a scoring function to score (partial) prediction sequences and stores the highest-scoring sequences at each sampling time step.
 With $b$ being the number of predictions stored, called beam width.
-The beam width decides the size of the search space in the algorithm, as only the highest scoring prediction sequences from the previous sampling time step will be expanded.
+The beam width decides the size of the algorithm's search space, as only the highest scoring prediction sequences from the previous sampling time step will be expanded.
 It is a greedy breadth-first search algorithm that maximizes a scoring function.
 
 The used scoring function that scores a sequence of tokens $y$ with length $L$ is:
 \[score(y) = \frac{1}{L^a} \sum\limits_{t=1}^{L}log\ P(y_t | y_{t-1},\dots,y_{1})\]
-It returns the product of the probabilities of token sequences (to make it more computational feasible, the sum of log probabilities).
+It returns the product of the probabilities of token sequences (to make it more computationally feasible, the sum of log probabilities).
 Because the scoring function will be used to score sequences with different lengths (as certain sequences will reach the end token faster than others),
 we have to scale the score by its prediction length. Otherwise shorter sequences will be scored higher.
 Parameter $a$ allows the scoring function to be tuned for certain prediction lengths.
@@ -126,9 +128,9 @@ All tokenizers in this Thesis for which it's vocabulary was computed with \acf{B
 The \ac{BPE} algorithm combines a frequently occurring pair of characters by replacing them with a novel character and storing this replacement in a lookup table.
 This novel character can then also be combined further with other characters. 
 This is repeated until either the lookup table has reached the desired vocabulary size or there are no more frequently occurring pair of characters in the modified dataset.
-These replacements from the lookup table can then be reconstructed to their original sequence of characters.
-These reconstructed sequences denote frequently occurring sequences in the dataset and are stored in the vocabulary of the tokenizer.
+These replacements from the lookup table can then be reconstructed to their original character sequences, which represent frequently occurring patterns in the dataset and are stored in the tokenizer's vocabulary.
 Because of the replacements in the dataset, these sequences can very in length.
+
 Two important parameters can be set in this algorithm:
 (1) The vocab size discussed before. This dictates the maximum number of sequences that can be stored in the vocabulary and will thus decide if the algorithm will be halted early. The default value is 30,000.
 (2) The minimum frequency a pair of characters has to occur in the dataset to be stored. The default value is 2.
@@ -143,13 +145,13 @@ The SELFIES de novo model from the paper did not use \ac{BPE}, the vocabulary of
 
 All datasets were augmented offline, before training, to preserve execution time on the \ac{HPC} of Ghent University.
 Code for the data augmentation can be found as a notebook at \url{https://github.com/wwelvaer/thesis/blob/main/notebooks/augmentation.ipynb}.
-For all augmented training sets, a SMILES transformer model was trained with the same optimal hyperparameters from the MassSpecGym paper \cite{bushuiev2024massspecgym}.
+For all augmented training sets, a SMILES transformer model was trained with the same hyperparameters from the MassSpecGym paper \cite{bushuiev2024massspecgym}.
 
 \subsection{SMILES augmentation}
 
 SMILES are a one-dimensional representation of a 2d molecular graph.
 The traversal algorithm to convert a molecular graph to a SMILES is deterministic.
-The same molecular graph will always be converted to the same SMILES.
+The same molecular graph will always be converted to the same canonicalized SMILES.
 We can randomize this traversal algorithm to create different SMILES for the same molecular graph.
 The SMILES are then synonyms of each other, as they represent the same molecule.
 RDkit has already implemented the randomized traversal in their MolToSmiles function (\url{https://www.rdkit.org/docs/source/rdkit.Chem.rdmolfiles.html#rdkit.Chem.rdmolfiles.MolToSmiles}).
@@ -165,10 +167,11 @@ The original training samples with the original SMILES are kept in the datasets.
 
 The \ac{MS/MS} spectra of two identical molecules can be shifted because of different precursor masses.
 We can mimic this to augment the training spectra.
-Following the methods of DreaMS \cite{bushuiev2024emergence}, all augmented spectra are randomly shifted by a maximum m/z range of 50.
+Following the methods of DreaMS \cite{bushuiev2024emergence}, all augmented spectra are randomly shifted by applying the same random shift with a maximum m/z range of 50 to all the peaks.
 The SMILES labels from the augmented spectra are copied.
 
-Two different augmented training sets were created. One mimicking DreaMS where $20\%$ of the training spectra are augmented, and one where all training spectra are augmented.
+Two different augmented training sets were created.
+One mimicking DreaMS where $20\%$ of the training spectra are augmented, and one where all training spectra are augmented.
 Again, the original training data is kept in the augmented training sets.
 
 \section{Molecular representations}
@@ -179,19 +182,21 @@ For translation, RDkit was used except for DeepSMILES and SELFIES, these molecul
 To ease the implementation of models predicting different molecular representations than SMILES,
 we can add a translation step before the model input and after the model output.
 This allows the model to receive SMILES for training and output SMILES for evaluating,
-while training on, and predicting another molecular representation.
+while training on and predicting another molecular representation.
 The translation occurs thus at training and evaluation time.
 This method is also used for the de novo SELFIES model in the MassSpecGym paper (see section \ref{subsec:massspecgymmodels}).
 The tokenizer is used to handle translation. Before every encoding, and after every decoding step, a translation step from and to SMILES is performed.
 The code used for all tokenizers can be found at \url{https://github.com/wwelvaer/thesis/blob/main/MassSpecGym/mol_tokenizers.py}.
 
-Because SMILES can be rewritten during translation to and from another molecular representation.
-The training SMILES are passed through each representation's tokenizer to compute the actual training labels for the corresponding models.
+Because SMILES can be rewritten during translation to and from another molecular representation,
+the training SMILES are passed through each representation's tokenizer to compute possible translation modifications.
+The resulting (possibly modified) training SMILES are then stored for each representation.
+When the model predicts a molecule from its training set, the translated SMILES-string will be present in this stored dataset.
 This way the amount of de novo predictions can be accurately measured with different molecular representations.
 
 Multiple models were trained on the following molecular representations: SMILES, DeepSMILES, SELFIES and InchI.
-For each of the four representations a model was trained using a tokenizer pre-computed with \ac{BPE} on the unlabeled 4 million molecules dataset,
-mimicking the implementation from the de novo SMILES model from MassSpecGym. All models used the hyperparameters from this model.
+For each of the four representations a model was trained using a tokenizer pre-computed with \ac{BPE} on the unlabeled 4 million molecules dataset from MassSpecGym,
+mimicking the implementation from the de novo SMILES model. All models used the hyperparameters from this model.
 For these representation, a model was also trained using a tokenizer without \ac{BPE}.
 
 To respect the more complex composition of InchI, a model with multiple decoders was created to predict the different layers of an InchI string.
@@ -199,4 +204,4 @@ Because only the first three layers encode the 2d composition of a molecule, and
 the model only predicts these three layers.
 Three decoders are used to predict these layers. These decoders share the exact same architecture used by the decoders from the other models.
 Each decoder has its own tokenizer. For simplicity, a parent tokenizer handles these three tokenizers and handles the correct merging of the three predictions by the model.
-To train the model, the loss of the model is the sum of the loss from the three decoders.
+To train the model, the loss of the model is the sum of the losses from the three decoders.
