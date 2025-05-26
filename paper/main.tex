@@ -58,12 +58,12 @@
 \begin{document}
 \frontmatter
 % plug your own cover page here
-%\includepdf[pages=-]{Cover.pdf}
+\includepdf[pages=-]{cover.pdf}
 % some empty pages
+\newpage\null\thispagestyle{empty}
+\newpage\null\thispagestyle{empty}
 %\newpage\null\thispagestyle{empty}
-%\newpage\null\thispagestyle{empty}
-%\newpage\null\thispagestyle{empty}
-%\input{Preface}
+\input{Preface}
 
 \tableofcontents
 \listoffigures
@@ -71,21 +71,12 @@
 \input{Acronyms}
 
 \mainmatter
-% \input{Abstract}
+\input{chapters/abstract}
 \input{chapters/background}
 \input{chapters/aims}
 \input{chapters/results}
 \input{chapters/discussion}
 \input{chapters/methods}
-
-
-% \input{Abstract}
-% \input{Introduction}
-% \input{Related_work}
-% \input{Aims}
-% \input{Results}
-% \input{Methods}
-% \input{Discussion}
 
 \printbibliography
 
@@ -93,6 +84,6 @@
 \input{chapters/appendix}
 
 % some empty pages
-%\newpage\null\thispagestyle{empty}
-%\newpage\null\thispagestyle{empty}
+\newpage\null\thispagestyle{empty}
+\newpage\null\thispagestyle{empty}
 \end{document}
