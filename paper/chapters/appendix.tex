@@ -1,7 +1,7 @@
-\chapter{Appendix}
+\chapter[Appendix]{}
 \label{chap:appendix}
 
-A few experiments / results that are not that relevant for the scope of this thesis are mentioned in this section.
+A few experiments / results that are not that relevant for the scope of this thesis are mentioned in this chapter.
 
 \section{Sampler parallelization}
 \label{sec:sampler_parallelization}
@@ -26,7 +26,7 @@ Figures \ref{fig:top-k_appendix}, \ref{fig:top-k_zoomed_appendix}, \ref{fig:top-
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/appendix/samplers/top-k_vs_naive.png}
-    \caption{Full top-k benchmark with top-1 and temperature search results}
+    \caption{Full top-k benchmark with top-1 and temperature search results on the validation set}
     \label{fig:top-k_appendix}
 \end{figure}
 
@@ -35,7 +35,7 @@ Top-k with $k=20$ is left out of figure \ref{fig:top-k_appendix} for readability
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.6\linewidth]{figures/appendix/samplers/top-k_vs_naive_top-10.png}
-    \caption{Zoomed in top-k top-10 MCES distance}
+    \caption{Zoomed in top-k top-10 MCES distance on the validation set}
     \label{fig:top-k_zoomed_appendix}
 \end{figure}
 
@@ -44,7 +44,7 @@ Figure \ref{fig:top-k_zoomed_appendix} shows the slight improvement of top-k $k\
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/appendix/samplers/top-p_vs_naive.png}
-    \caption{Full top-p benchmark with top-1 and temperature search results}
+    \caption{Full top-p benchmark with top-1 and temperature search results on the validation set}
     \label{fig:top-p_appendix}
 \end{figure}
 
@@ -53,7 +53,7 @@ The search grid for the top-p benchmark was for some values of $p$ cut short to 
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.6\linewidth]{figures/appendix/samplers/top-p_vs_naive_top-10.png}
-    \caption{Zoomed in top-p top-10 MCES distance}
+    \caption{Zoomed in top-p top-10 MCES distance on the validation set}
     \label{fig:top-p_zoomed_appendix}
 \end{figure}
 
@@ -64,38 +64,41 @@ Figure \ref{fig:top-p_zoomed_appendix} shows that the top-p sampler results do n
 This section shows the full naive top-10 results of the \ac{BPE}, augmentation and molecular representations experiments for different temperatures.
 \label{sec:temp_search_appendix}
 
-\begin{figure}[h]
+\subsection*{BPE as pretraining}
+\begin{figure}[h!]
     \centering
     \includegraphics[width=1.0\textwidth]{figures/appendix/bpe_with_tanimoto.png}
-    \caption{Top-10 Naive sampler temperature search BPE experiment results}
+    \caption{Top-10 Naive sampler temperature search BPE experiment results on the validation set}
     \label{fig:bpe_appendix}
 \end{figure}
 
+\subsection*{Augmentation}
 \begin{figure}[H]
     \centering
     \includegraphics[width=1.0\textwidth]{figures/appendix/smiles_augmentation_with_tanimoto.png}
-    \caption{Top-10 Naive sampler temperature search smiles augmentation experiment results}
+    \caption{Top-10 Naive sampler temperature search smiles augmentation experiment results on the validation set}
     \label{fig:smiles_augmentation_appendix}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=1.0\textwidth]{figures/appendix/spectal_augmentation_with_tanimoto.png}
-    \caption{Top-10 Naive sampler temperature search spectral augmentation experiment results}
+    \caption{Top-10 Naive sampler temperature search spectral augmentation experiment results on the validation set}
     \label{fig:spectral_augmentation_appendix}
 \end{figure}
 
+\subsection*{Representations}
 \begin{figure}[H]
     \centering
     \includegraphics[width=1.0\textwidth]{figures/appendix/representations_with_layered_inchi_with_tanimoto.png}
-    \caption{Top-10 Naive sampler temperature search representations experiment results}
+    \caption{Top-10 Naive sampler temperature search representations experiment results on the validation set}
     \label{fig:representations_appendix}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=1.0\textwidth]{figures/appendix/layered_inchi_with_tanimoto.png}
-    \caption{}
+    \caption{Evaluation on the validation set of three-headed InchI model compared to the SMILES and InchI models}
     \label{fig:layered_inchi}
 \end{figure}
 
