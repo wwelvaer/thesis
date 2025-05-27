@@ -61,6 +61,7 @@ Figure \ref{fig:top-p_zoomed_appendix} shows that the top-p sampler results do n
 
 
 \section{Top-10 Naive sampler temperature search results}
+This section shows the full naive top-10 results of the \ac{BPE}, augmentation and molecular representations experiments for different temperatures.
 \label{sec:temp_search_appendix}
 
 \begin{figure}[h]
@@ -70,30 +71,32 @@ Figure \ref{fig:top-p_zoomed_appendix} shows that the top-p sampler results do n
     \label{fig:bpe_appendix}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=1.0\textwidth]{figures/appendix/smiles_augmentation_with_tanimoto.png}
     \caption{Top-10 Naive sampler temperature search smiles augmentation experiment results}
     \label{fig:smiles_augmentation_appendix}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=1.0\textwidth]{figures/appendix/spectal_augmentation_with_tanimoto.png}
     \caption{Top-10 Naive sampler temperature search spectral augmentation experiment results}
     \label{fig:spectral_augmentation_appendix}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=1.0\textwidth]{figures/appendix/representations_with_layered_inchi_with_tanimoto.png}
     \caption{Top-10 Naive sampler temperature search representations experiment results}
     \label{fig:representations_appendix}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=1.0\textwidth]{figures/appendix/layered_inchi_with_tanimoto.png}
     \caption{}
     \label{fig:layered_inchi}
 \end{figure}
+
+Figure \ref{fig:layered_inchi} shows the performance of the InchI model with three decoders. It is clear the the model struggles to predict any valid molecules.
