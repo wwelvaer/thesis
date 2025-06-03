@@ -2,12 +2,12 @@
 \label{chap:abstract}
 
 Tandem Mass Spectrometry has been widely used to analyze unknown compounds because of its speed and accuracy.
-Finding the correct molecular structure from a mass spectrum is a crucial task for downstream applications.
+Identifying the correct molecular structure from a mass spectrum is a crucial task for downstream applications.
 Current methods mainly rely on database lookups, which fail to predict the vast number of unannotated molecules in 'dark chemical space'.
-De novo molecule prediction aims to infer chemical structures directly from mass spectra, enabling the prediction of any molecule.
-Currently, de novo models use autoregressive models to predict string-based molecular representations, being heavily inspired by the recently promising large language model research.
-Many of the methods, used by these models, are directly adopted from natural language processing research, raising questions about their suitability for molecular structure prediction.
+\textit{De novo} molecule prediction aims to infer chemical structures directly from mass spectra, enabling the prediction of any molecule.
+Currently, \textit{de novo} models use autoregressive models to predict string-based molecular representations, being heavily inspired by the recently promising large language model research.
+Many of the methods used by these models are directly adopted from natural language processing research, raising questions about their suitability for molecular structure prediction.
 Accurate benchmarking of de novo models has only become feasible in recent months, following the release of a standardized and robust dataset by MassSpecGym.
-In this thesis, several experiments measure the performance of different sampling methods, tokenizers, augmentation methods and string-based molecular representations for de novo molecular structure prediction.
-While no methods were found that notably improved performance, these methods do show problems with overfitting and inherent biases for these autoregressive models.
-These results, along with the recent study of DiffMS, on graph prediction using diffusion models, show that autoregressive models predicting string-based molecular representations are not the way forward for de novo molecular structure prediction.
+In this thesis, several experiments are performed to measure the performance of: (1) different sampling methods, (2) tokenizers, (3) augmentation methods, and (4) string-based molecular representations for de novo molecular structure prediction.
+While no methods were found that notably improved performance, our results reveal problems with regard to overfitting and inherent biases for these autoregressive models.
+These results, along with the recent study of DiffMS, on graph prediction using diffusion models, indicate that autoregressive models predicting string-based molecular representations are not the way forward for de novo molecular structure prediction.
