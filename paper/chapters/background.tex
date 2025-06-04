@@ -442,9 +442,14 @@ The most used sampling methods are listed below \cite{holtzman2019curious}:
     \item[Greedy sampling] This sampling method always returns the token with the highest probability. In text generation this will often lead to repetition.
     \item[Top-k sampling] Here, only the top-k tokens with the highest probabilities are taken into account. The method samples from their probabilities that are rescaled between them. It is a method to remove the low probability of the less likely tokens to be sampled.
     \item[Top-p / Nucleus sampling] In this sampling method, the top x tokens are calculated for which their cumulative probability exceeds a parameter p, with x kept as low as possible. Again, the method samples from the rescaled probabilities of the top x tokens. It is a more balanced method for removing the probability for less likely tokens to be sampled.
-    \item[Beam Search] \cite{freitag2017beam} For this method, a number of predictions, called "beams", are stored at each time step, with the number of beams as a parameter. Only the probabilities for the next tokens for each of the beams are calculated. Each token is then given a score using a scoring function that takes the context into account based on the cumulative probability. The tokens for which the scores are the highest are stored along with their context as new beams.
+    
+    \item[Beam Search] \cite{freitag2017beam} This is a greedy breadth-first search algorithm that maximizes a scoring function.
+    For this method, a beam width parameter $b$ dictates the search space. At each time step, $b$ partial predictions are stored.
+    Only the probabilities for the next tokens of these $b$ partial predictions are calculated.
+    Each next token is then given a score using a scoring function that takes the context into account based on the cumulative probability.
+    The tokens for which the scores are the highest are stored along with their context as new partial predictions.
 
-    An example of a scoring function that scores a beam consisting of a vector of tokens $y$ with length $L$ is:
+    An example of a scoring function that scores a partial prediction consisting of a vector of tokens $y$ with length $L$ is:
     \[score(y) = \frac{1}{L^a} \sum\limits_{t=1}^{L}log\ P(y_t | y_{t-1},\dots,y_{1})\]
     Because the scoring function is based on the cumulative probability, a length normalization (adjustable with parameter $\alpha$) is included to prevent the sampler from preferring short sequences.
     
