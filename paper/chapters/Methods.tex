@@ -141,6 +141,7 @@ Code for the data augmentation can be found as a notebook at \url{https://github
 For all augmented training sets, a SMILES transformer model was trained with the same hyperparameters from the MassSpecGym paper \cite{bushuiev2024massspecgym}.
 
 \subsection{SMILES augmentation}
+\label{sec:smiles_augmentation}
 
 SMILES are a one-dimensional representation of a 2d molecular graph.
 The traversal algorithm to convert a molecular graph to a SMILES is deterministic.
@@ -158,7 +159,7 @@ The original training samples with the original SMILES are kept in the datasets.
 
 \subsection{Spectral augmentation}
 
-The \ac{MS/MS} spectra of two identical molecules can be shifted because of different precursor masses.
+The \ac{MS/MS} spectra of two identical molecules can be shifted because of different neutral losses \cite{bushuiev2024emergence}.
 We can mimic this to augment the training spectra.
 Following the methods of DreaMS \cite{bushuiev2024emergence}, all augmented spectra are randomly shifted by applying the same random shift with a maximum m/z range of 50 to all the peaks.
 The SMILES labels from the augmented spectra are copied.

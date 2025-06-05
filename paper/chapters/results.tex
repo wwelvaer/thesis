@@ -220,17 +220,22 @@ Because the \ac{BPE} 4M tokenizer is the standard used by MassSpecGym's de novo 
 The influence of different data augmentation methods was measured by retraining MassSpecGym's SMILES de novo model with different augmented datasets.
 For each of these models, along with the baseline model without augmentation, the MCES distance, Tanimoto similarity, fraction of valid predictions and fraction of novel predictions were evaluated on the validation set.
 As before, a greedy sampler was used for the top-1 setting, while a temperature search was conducted with the naive sampler for the top-10 setting.
-Full results for the naive top-10 temperature search can be found in the appendix section \ref{sec:temp_search_appendix}.
+Full results for the naive top-10 temperature search can be found in the Section \ref{sec:temp_search_appendix}.
 
 \subsection{SMILES augmentation}
 
-Labeled spectra can be augmented by calculating synonyms of the SMILES label that represent the same molecular graphs.
+Labeled spectra can be augmented by calculating synonyms of the SMILES label that represent the same molecular graphs, as explained in Section \ref{sec:smiles_augmentation}.
 The dataset can then be duplicated by copying the spectra and using a SMILES synonym as label.
 This should allow the model to be more robust against repeated SMILES in the training set.
 For this experiment three models were trained, for which the whole training set was duplicated once, twice and five times with SMILES synonyms (referred as 1x synonym, 2x synonyms and 5x synonyms respectively in the results).
-For all these models the original training data with the original SMILES was kept in the training set.
+For all these models, the original training data with the original SMILES was kept in the training set.
 Figure \ref{fig:smiles_augm} shows the evaluated results of these models using different evaluation metrics and settings.
-The full naive sampler's top-10 temperature search results can be found in the appendix figure \ref{fig:smiles_augmentation_appendix}.
+The full naive sampler's top-10 temperature search results can be found in Figure \ref{fig:smiles_augmentation_appendix}.
+
+From Figure \ref{fig:smiles_augm}, it is clear that SMILES augmentation does not seem to improve the de novo SMILES model from MassSpecGym.
+The MCES distance, Tanimoto similarity and number of valid predictions get worse when more augmented SMILES are used for training.
+Only the number of novel molecules, top-1 predicted, seems to increase by using some augmentation, especially when taking the number of valid molecules into account. 
+For the 5x synonyms model almost all valid predictions are novel predictions, compared to around 50\% of the not-augmented model.
 
 \begin{figure}[h]
     \centering
@@ -239,21 +244,22 @@ The full naive sampler's top-10 temperature search results can be found in the a
     \label{fig:smiles_augm}
 \end{figure}
 
-From figure \ref{fig:smiles_augm} it is clear that SMILES augmentation does not seem to improve the de novo SMILES model from MassSpecGym.
-The MCES distance, Tanimoto similarity and number of valid predictions get worse when more augmented SMILES are used for training.
-Only the number of novel molecules, top-1 predicted, seems to increase by using some augmentation.
-Too much augmentation reduces this again.
-
+\newpage
 Overall, MassSpecGym's de novo SMILES model does not seem to benefit from any SMILES augmented data.
+A possible explanation for this worse performance is that the SMILES generation algorithm by RDkit (without random graph traversal) is deterministic.
+It uses a canonicalization algorithm to generate this deterministic SMILES-string \cite{daylight_smiles_theory}.
+Even though multiple SMILES can map to the same molecular structure, this algorithm will always be able to generate the same canonicalized SMILES-string from a molecular graph.
+All SMILES labels in the MassSpecGym use this canonicalized format. 
+By making the SMILES generation random, it could make training harder for the model.
 
 \subsection{Spectral augmentation}
 
-Input spectra can be augmented by simulating variations in precursor masses through spectral shifts.
+Input spectra can be augmented by simulating variations in neutral losses through spectral shifts.
 Labeled spectra were augmented by applying the same random mz-shift to the peaks of a spectrum and copying its SMILES label.
-Two models were trained for this experiments, with $20\%$ and $100\%$ of the training spectra augmented (referred as $20\%$ mz shift augm. and $100\%$ mz shift augm. respectively in the results).
+Two models were trained for this experiments, with $20\%$ and $100\%$ of the training spectra augmented (referred to as $20\%$ mz shift augm. and $100\%$ mz shift augm., respectively, in the results).
 Again, the original training data is kept in the training set.
 Figure \ref{fig:spectral_augm} shows the evaluated results of these models using different metrics and evaluation settings.
-As usual, the full naive samplers top-10 temperature search results can be found in the appendix figure \ref{fig:spectral_augmentation_appendix}.
+As usual, the full naive samplers top-10 temperature search results can be found in the Appendix Figure \ref{fig:spectral_augmentation_appendix}.
 
 \begin{figure}[h]
     \centering
@@ -263,10 +269,11 @@ As usual, the full naive samplers top-10 temperature search results can be found
 \end{figure}
 
 In contrast to the previous augmentation method, spectral augmentation does seem to help the de novo SMILES model from MassSpecGym.
-While there are no significant improvements looking at the MCES distance and Tanimoto similarity, the $20\%$ augmented model is able to predict more valid and especially more novel molecules.
+While there are no considerable improvements looking at the MCES distance and Tanimoto similarity, the $20\%$ augmented model is able to predict more valid and especially more novel molecules.
 Too much augmentation, again, hinders performance as the original data gets drowned in augmented data.
 
 This method of augmentation, when moderately used, clearly seems to help the model be less prone to overfitting, as the top-1 greedy sampler is able to predict more than $20\%$ more novel molecules. 
+However, to start from the same baseline, no augmentation is used in the next experiment.
 
 \section{Molecular representations benchmark}
 

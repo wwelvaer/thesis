@@ -74,52 +74,21 @@ The following sections discuss the results and possible improvements for each ex
 
 \subsection{Samplers benchmark}
 
-The main conclusion from the samplers benchmark is that different samplers can perform better with different evaluation settings.
-The deterministic samplers performed best with top-1 evaluation, showing their capability to predict valid molecules.
-The probabilistic samplers, on the other hand, predicted more varying, sometimes invalid, molecules, which allowed them to outperform the deterministic samplers with a top-10 evaluation setting.
-
-When predicting molecular structures from \ac{MS/MS}, randomness is not a desired property as there is only one correct molecular structure.
-Even though multiple SMILES can represent the same molecular structure, overall we only want the correct atoms and bonds to be predicted.
-A possible explanation for this phenomenon is that, on average, a bit of randomness could somewhat overcome the exposure bias from the overfitted model.
-
-The beam search sampler's poor performance could also be linked to overfitting.
-To verify this, the number of novel molecules should have been calculated.
 
 In later experiments, it shows that the SMILES model used for this experiment was severely overfit on the training SMILES.
 This experiment should in an ideal case also have to be repeated for a model that is able to predict more de novo molecules (e.g. SELFIES model).
 
 \subsection{\ac{BPE} as pretraining}
 
-Using \ac{BPE} increases the number of valid predictions at the cost of novel predictions. 
-This conclusion is again confirmed by the molecular representations experiment in figure \ref{fig:representations}.
-The main advantage is that by grouping multiple tokens as one, \ac{BPE} decreases the number of tokens the model has to predict.
-When the model has less tokens to predict, it will make less mistakes, leading to more valid molecules.
-In contrast, it will favour grouped tokens seen in the training data, and by having less tokens to predict, it will more often lead to predictions from the training set.
-When using \ac{BPE}, the parameters of the algorithm should be tuned such that a balance between performance and minimal overfitting could be found.
-
-While the results show that computing the \ac{BPE} on the 118M dataset did not improve the model's performance compared to the 4M dataset, even though it has almost 30 times more SMILES,
-the quality of this dataset is considerably worse.
-As explained in the MassSpecGym paper, the 118M dataset consists of all the available data from PubChem. 
-No quality control was conducted for this dataset, which allows for an unrealistic distribution of chemical classes in the dataset.
-An overrepresentation of one chemical class could severely influence the patterns found by the \ac{BPE} algorithm.
-In contrast, the 4M dataset does have a controlled representation of multiple chemical classes.
-This shows that quality is preferred over quantity.
 
 \subsection{Augmentation}
 
 Augmentation proved to be a difficult task for the SMILES de novo model.
 Although the model noticeably overfits on the training data, augmentation has proven to be a great tool to combat overfitting \cite{shorten2019survey}.
-Using other models, that experience less overfitting, would therefor probably not drastically change this experiment's results.
+Using other models, that experience less overfitting, would therefore probably not drastically change this experiment's results.
 
 \subsubsection*{SMILES augmentation}
 
-Figure \ref{fig:smiles_augm} shows that using SMILES synonyms as data augmentation does not improve the model's performance.
-The number of novel molecules does increase when taking the number of valid molecules into account, as for the 5x synonyms model almost all valid predictions are novel predictions, compared to around 50\% of the not-augmented model.
-A possible explanation for this worse performance is that the SMILES generation algorithm by RDkit (without random graph traversal) is deterministic.
-It uses a canonicalization algorithm to generate this deterministic SMILES-string \cite{daylight_smiles_theory}.
-Even though multiple SMILES can map to the same molecular structure, this algorithm will always be able to generate the same canonicalized SMILES-string from a molecular graph.
-All SMILES labels in the MassSpecGym use this canonicalized format. 
-By making the SMILES generation random, it could make training harder for the model.
 
 A flaw in the setup of this experiment, is that all augmented models used the same tokenizer, for which \ac{BPE} was only computed on the canonicalized SMILES from the training set.
 Only patterns from canonicalized SMILES were thus grouped in the vocabulary.
@@ -134,8 +103,6 @@ The drawback is, however, that the original canonicalized SMILES would be severe
 
 \subsubsection*{Spectral augmentation}
 
-While figure \ref{fig:spectral_augm} shows no remarkable performance improvement, using a bit of augmented spectra does noticeably improve the number of valid and novel predictions.
-Spectral augmentation thus proves to be useful to combat overfitting and increase generalization, when used moderately.
 
 A possible improvement for this experiment would be to, instead of randomly augmenting 20\% of the spectra, try to fix the imbalance from the training set by augmenting the spectra of the underrepresented SMILES.
 
