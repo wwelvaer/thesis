@@ -10,7 +10,7 @@ All code used for this thesis is available on github (\url{https://github.com/ww
 All models trained for this thesis use the labeled MassSpecGym dataset, described in Section \ref{subsec:massspecgymdataset}, and follow the de novo model architecture from MassSpecGym~\cite{bushuiev2024massspecgym} closely.
 Most of the model architecture code was heavily inspired by MassSpecGym's source code.
 It uses the pytorch transformer implementation along with a linear layer before and after the transformer to achieve the requested input and output dimensions for the transformer.
-The training algorithm follows the original transformer implementation from \textcite{vaswani2017attention}.
+The training algorithm follows the original transformer implementation from \textcite{vaswani2017attention}, using a teacher forcing approach where only ground truth tokens are used to predict the next token at training time.
 This results in a model that predicts the probability distribution of the next token given the peaks of a \ac{MS/MS} spectrum along with an already generated context sequence of tokens.
 Spectrum peaks are provided as a 2d array with two columns. Each row corresponds to one peak in the spectrum with the value in the first column being its m/z value and the second column its intensity.
 The model acts as a classifier for the next token by outputting a vector of length $v$, with $v$ being the number of tokens of the tokenizer.
@@ -67,6 +67,7 @@ One version uses the parallelization by reducing the number of forward passes (r
 These versions will have the same results and will only differ in execution time.
 
 \subsection{Stochastic samplers}
+\label{sec:stochastic_samplers}
 
 Stochastic autoregressive sampling algorithms introduce randomness by sampling from the output distribution in a specific manner.
 This allows them to be called multiple times to get different predictions from the same spectra as described before.
