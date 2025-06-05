@@ -146,61 +146,74 @@ This exploitation is clearly visible on the fraction of valid predictions plot i
 
 The top-10 MCES distance from the beam search sampler is still notably worse than the best top-10 naive sampler results, showing that for top-10 evaluation exploration is still preferred over exploitation.
 
-Overall, from these results, the greedy sampler seems to perform best for the top-1 setting, while the naive sampler excels in the top-10 setting.
-For all the following experiments in this thesis, the greedy and naive samplers are only used for the top-1 and top-10 setting respectively.
+Overall, from these results, the greedy sampler seems to perform best for the top-1 evaluation setting, while the naive sampler excels in the top-10 evaluation setting.
+For all the following experiments in this thesis, the greedy and naive samplers are only used for the top-1 and top-10 evaluation setting respectively.
 
 \section{\ac{BPE} as pretraining}
 
-The previous experiment used a SMILES de novo model with a vocabulary, precomputed using \ac{BPE}.
+The previous experiment used a SMILES de novo model with a vocabulary, precomputed using \ac{BPE} on the unlabeled dataset with 4,000,000 SMILES from MassSpecGym.
 To measure the influence of the \acf{BPE} on the model's performance, in this experiment, SMILES models were trained with different tokenizers.
 These tokenizers only differ in vocabulary and, consequently, vocabulary size.
 The training hyperparameters are kept the same for all models for consistency.
 
-A simple tokenizer that does not pre-compute any patterns with \ac{BPE} in its vocabulary was used to train a baseline model.
+A simple tokenizer that does not pre-compute any substrings with \ac{BPE} in its vocabulary was used to train a baseline model.
 The other tokenizers used MassSpecGym's unlabeled SMILES datasets of different sizes.
 These datasets are further referred to as 4M and 118M, for the datasets with 4,000,000 and 118,000,000 SMILES respectively.
-Using these unlabeled datasets can be seen as a form of pretraining, where frequently occurring patterns are captured as single tokens in the vocabulary.
+Using these unlabeled datasets can be seen as a form of pretraining, where frequently occurring substrings are captured as single tokens in the vocabulary.
 All tokenizers, pre-computed with \ac{BPE}, also use the training SMILES in its \ac{BPE} corpus.
 One tokenizer only used the SMILES from the training set to compute the \ac{BPE} patterns.
 This model is a \ac{BPE} baseline to see how using the unlabeled datasets can influence performance.
 
 For the 4M and 118M dataset, a second tokenizer was pre-computed where the \ac{BPE} algorithm was given a more strict cut-off for grouping characters, by increasing the minimal frequency parameter from 2 (the default value) to 10.
-Lastly, because the vocabulary size of the 118M tokenizer reached the algorithm's threshold, a tokenizer was computed on the 118M dataset where computation halted as soon as the vocabulary reached the size of 5200 (= vocabulary size of the 4M tokenizer). 
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.79\textwidth]{figures/results/bpe_with_tanimoto.png}
-    \caption{Evaluation on the validation set of SMILES models trained with different Byte-Pair encoded tokenizers}
-    \label{fig:bpe}
-\end{figure}
+Lastly, because the vocabulary size of the 118M tokenizer reached the algorithm's threshold, a tokenizer was computed on the 118M dataset where computation halted as soon as the vocabulary reached the size of 5200 (equal to the vocabulary size of the 4M tokenizer). 
 
 Figure \ref{fig:bpe} shows the evaluation of the models trained with different \ac{BPE} tokenizers, using the greedy sampler and the best naive sampler for the top-1 and top-10 evaluation settings respectively.
 A new evaluation metric, the fraction of novel predictions, can be seen in the last plot.
-It shows the fraction of valid predictions that are not present in the training set.
+It shows the fraction of valid predictions that are not identical to a molecule in the training set.
 This measures how much the model is able to predict unseen SMILES as a metric to quantify overfitting.
-The complete temperature search for the naive top-10 sampler can be found in the appendix figure \ref{fig:bpe_appendix}.
+The complete temperature search for the naive top-10 sampler can be found in the Appendix Figure \ref{fig:bpe_appendix}.
 
 The most notable result from Figure \ref{fig:bpe} is that models trained with a \ac{BPE} tokenizer have more valid predictions.
-Note that the y-axis of the fraction of valid predictions plot does not start at zero for readability.
 Using \ac{BPE} does indeed succeed in reducing invalid predictions, achieving its intended purpose.
 A huge drawback however, can be seen when looking at the fraction of novel predictions.
 Using \ac{BPE} with default parameters nearly halves the number of novel predictions compared to the model trained with a non-BPE tokenizer, which indicates that using \ac{BPE} increases overfitting.
 
-The \ac{BPE} 4M tokenizer has the best performance looking at the MCES distance and Tanimoto similarity, it also achieves on of the highest number of valid predictions compared to the other tokenizers.
-The poor amount of novel predictions does question if this result is due to overfitting, as more than half of its predictions are from the training set SMILES.
+The \ac{BPE} 4M tokenizer is used in MassSpecGym's de novo SMILES model.
+Figure \ref{fig:bpe} shows that it has the best performance looking at the MCES distance and Tanimoto similarity, it also achieves one of the highest number of valid predictions compared to the other tokenizers.
+The poor amount of novel predictions does question if this result is due to overfitting, as more than half of its predictions are identical to molecules from the training set.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.79\textwidth]{figures/results/bpe_with_tanimoto.png}
+    \caption{Evaluation on the validation set of SMILES models trained with different Byte-Pair encoded tokenizers.
+    Note that the y-axis of the fraction of valid predictions plot does not start at zero for readability.}
+    \label{fig:bpe}
+\end{figure}
 
 A strange result is that the use of the larger 118M dataset does not improve performance compared to the 4M dataset when comparing MCES distance and Tanimoto similarity.
 More data should result in better generalization.
-This can however be due to the fact that the quality of this dataset can be questioned.
+This can however be due to the fact that the quality of this dataset is considerably worse.
+As explained in the MassSpecGym paper, the 118M dataset consists of all the available data from PubChem. 
+No quality control was conducted for this dataset, which allows for an unrealistic distribution of chemical classes in the dataset.
+An overrepresentation of one chemical class could severely influence the patterns found by the \ac{BPE} algorithm.
+In contrast, the 4M dataset does have a controlled representation of multiple chemical classes.
+This shows that quality is preferred over quantity.
+
 Limiting the vocabulary size also shows to negatively impact performance, although for the 118M tokenizer it does increase the number of valid predictions.
 Increasing the minimal frequency for patterns to be grouped also shows to noticeably increase the number of novel predictions.
 This means that the overfitting through \ac{BPE} can be limited.
 The 118M tokenizer with a minimal frequency of 10 almost reaches the same number of novel predictions as the model without \ac{BPE}, with almost $10\%$ more valid predictions for the top-1 greedy sampler.
-Sadly its MCES distance and Tanimoto similarity is the worst out of all the models from this experiment.
+Sadly, its MCES distance and Tanimoto similarity is the worst out of all the models from this experiment.
 
-Overall, using \ac{BPE} with the tokenizers does reach its goal of improving the number of valid predictions.
+Overall, using \ac{BPE} increases the number of valid predictions at the cost of novel predictions.
 When solely looking at the MCES distance and Tanimoto similarity, using \ac{BPE} can (in some cases) improve the model's performance.
+The main advantage is that by grouping multiple tokens as one, \ac{BPE} decreases the number of tokens the model has to predict.
+When the model has less tokens to predict, it will make less mistakes, leading to more valid molecules.
 The number of novel predictions does put these results in doubt, questioning the generalization of these models.
+The model will favour grouped tokens seen in the training data, and by having less tokens to predict, it will more often lead to predictions that are identical to molecules from the training set.
+When using \ac{BPE}, the parameters of the algorithm should be tuned such that a balance between performance and minimal overfitting could be found.
+
+Because the \ac{BPE} 4M tokenizer is the standard used by MassSpecGym's de novo SMILES model and reached the best MCES distance, this tokenizer is used for the following experiments in thesis. 
 
 \section{Augmentation}
 

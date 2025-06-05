@@ -116,12 +116,13 @@ By using a beam width $b=1$, the beam search algorithm was be used as the greedy
 \label{sec:bpe}
 
 A tokenizer maps a token to a (sequence of) character(s) and back. The set of (sequence of) characters in a tokenizer is called its vocabulary.
-All tokenizers in this thesis for which the vocabulary was computed with \acf{BPE}, used the ByteLevelBPETokenizer implementation from huggingface's tokenizers library (\url{https://github.com/huggingface/tokenizers/blob/main/bindings/python/py_src/tokenizers/implementations/byte_level_bpe.py}).
 The \ac{BPE} algorithm combines a frequently occurring pair of characters by replacing them with a novel character and storing this replacement in a lookup table.
 This novel character can then also be combined further with other characters. 
 This is repeated until either the lookup table has reached the desired vocabulary size or there are no more frequently occurring pair of characters in the modified dataset.
 These replacements from the lookup table can then be reconstructed to their original character sequences, which represent frequently occurring patterns in the dataset and are stored in the tokenizer's vocabulary.
 Because of the replacements in the dataset, these sequences can very in length.
+
+All tokenizers in this thesis for which the vocabulary was computed with \acf{BPE}, used the ByteLevelBPETokenizer implementation from huggingface's tokenizers library (\url{https://github.com/huggingface/tokenizers/blob/main/bindings/python/py_src/tokenizers/implementations/byte_level_bpe.py}).
 
 Two important parameters can be set in this algorithm:
 (1) The vocab size discussed before. This dictates the maximum number of sequences that can be stored in the vocabulary and will thus decide if the algorithm will be halted early. The default value is 30,000.
