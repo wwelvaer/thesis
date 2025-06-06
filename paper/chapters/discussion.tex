@@ -97,24 +97,24 @@ However, with the severity of the imbalance in the dataset, this could introduce
 
 \section{Future for de novo structure prediction}
 
-The performance of the autoregressive models predicting string-based molecular representations, is very poor.
+The performance of the autoregressive models predicting string-based molecular representations is very poor.
 These models are not able to predict fully correct molecular structures from \ac{MS/MS}, as the complete structural accuracy on the validation and test set is close to zero percent.
-Partly, this can be due to the imperfect training setup discussed in section \ref{sec:overfitting}, there might be too many biases for the model to overcome.
-Some of these Biases however, can be fixed.
+Partly, this can be due to the imperfect training setup discussed in Section \ref{sec:overfitting}, there might be too many biases for the model to overcome.
+However, some of these biases can be fixed.
 The data imbalance could be mitigated by annotating more \ac{MS/MS} spectra and filtering out overrepresented molecules.
 Compared to other molecular datasets, MassSpecGym's labeled dataset is still relatively small.
 While additional data is highly desirable, as in most machine learning contexts, obtaining it remains a significant challenge.
 There are also a lot of methods that combat the exposure bias, e.g. scheduled sampling \cite{bengio2015scheduled} and professor forcing \cite{lamb2016professor}.
-All these methods can not entirely mitigate the exposure bias problem as this remains an inherent problem when training autoregressive models.
+All these methods can not entirely mitigate the exposure bias problem, as this remains an inherent problem when training autoregressive models.
 
-It could be questioned if using these autoregressive models and string-based molecular representations are the best method for the de novo structure prediction.
-While writing this Thesis, a new model, DiffMS \cite{bohde2025diffms}, was published that significantly changes the structure predicting pipeline.
-Instead of using an autoregressive decoder to predict molecular structures, DiffMS uses a discrete graph diffusion model to, instead of using string-based representations, generate the molecular graph itself.
+It could be questioned if using autoregressive models and string-based molecular representations is the best method for the de novo structure prediction.
+While writing this thesis, a new model, DiffMS \cite{bohde2025diffms}, was published that significantly alters the structure predicting pipeline.
+Instead of using an autoregressive decoder to predict molecular structures, DiffMS uses a discrete graph diffusion model to generate the molecular graph itself.
 This model did succeed to predict 2.3\% of the test molecules for top-1 evaluation and 4.25\% for top-10 evaluation of MassSpecGym's test set.
 
 Only recently has MassSpecGym introduced a standardized dataset to compare performance. De novo molecular structure prediction from \ac{MS/MS} is a very challenging task,
 but even within a few months has DiffMS proven that the string-based autoregressive implementation is flawed.
-Using graphical models to generate molecular structures seems to be the way forward instead of trying to use the methods from the natural language processing domain to predict string-based molecular representations.
+Using graph-based models to generate molecular structures seems to be the way forward instead of trying to use the methods from the natural language processing domain to predict string-based molecular representations.
 
 \section*{Disclaimer, use of generative AI}
 
