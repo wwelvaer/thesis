@@ -240,7 +240,7 @@ For the 5x synonyms model almost all valid predictions are novel predictions, co
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.79\textwidth]{figures/results/smiles_augmentation_with_tanimoto.png}
-    \caption{Evaluation on the validation set of SMILES models trained with different SMILES augmented datasets}
+    \caption{Evaluation on the validation set of SMILES models trained with different SMILES augmented datasets.}
     \label{fig:smiles_augm}
 \end{figure}
 
@@ -264,7 +264,7 @@ As usual, the full naive samplers top-10 temperature search results can be found
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.7\textwidth]{figures/results/spectrum_augmentation_with_tanimoto.png}
-    \caption{Evaluation on the validation set of SMILES models trained with different spectral augmented datasets}
+    \caption{Evaluation on the validation set of SMILES models trained with different spectral augmented datasets.}
     \label{fig:spectral_augm}
 \end{figure}
 
@@ -278,25 +278,27 @@ However, to start from the same baseline, no augmentation is used in the next ex
 \section{Molecular representations benchmark}
 
 Different molecular representations can be used to predict the structure of a molecule.
-This experiment benchmarks the string-based molecular representations for the de novo structure prediction from \ac{MS/MS} task.
-InchIkey is the only representation discussed in section \ref{sec:molrepr} that is not used to train a model, as predicting hash keys is not possible.
+This experiment benchmarks the string-based molecular representations from Section \ref{sec:molrepr} for the de novo structure prediction from \ac{MS/MS} task.
+InchIkey is the only representation discussed in Section \ref{sec:molrepr} that is not used to train a model, as predicting hash keys is not possible.
 All models were trained with the same hyperparameters.
-Because tokenizers with a byte-pair encoded vocabulary have shown to influence performance, for each molecular representation two models were trained.
+Because tokenizers with a byte-pair encoded vocabulary have shown to influence performance, for each molecular representation, two models were trained.
 One model used a byte-pair encoded tokenizer, the other used a basic character tokenizer.
+This way, the influence of pretraining with \ac{BPE} can be measured for different molecular representations.
 For all these models, a greedy sampler was used to evaluate the top-1 setting, while a temperature search was performed for the naive sampler with top-10 evaluation.
+This ensures that the model is sampled in a exploitative and explorative setting.
 Each molecular representation was thus evaluated four times.
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/results/representations_with_tanimoto.png}
-    \caption{Evaluation on the validation set of models trained with different molecular representations}
+    \caption{Evaluation on the validation set of models trained with different molecular representations.}
     \label{fig:representations}
 \end{figure}
 
-The full results for the naive top-10 evaluation with the different temperatures can be found in the appendix figure \ref{fig:representations_appendix}.
+The full results for the naive top-10 evaluation with different temperatures can be found in Figure \ref{fig:representations_appendix}.
 Figure \ref{fig:representations} shows the MCES distance, Tanimoto similarity, fraction of valid predictions and fraction of novel predictions of the predictions from models trained on different molecular representations.
 
-For the top-1 evaluation setting, SMILES outperforms the other molecular representations according to the MCES distance and Tanimoto similarity seen in figure \ref{fig:representations}.
+For the top-1 evaluation setting, SMILES outperforms the other molecular representations according to the MCES distance and Tanimoto similarity seen in Figure \ref{fig:representations}.
 SMILES and SELFIES seem to perform the best for the top-10 evaluation according to their MCES distances, the Tanimoto similarity does not reflect this however, with the SMILES models outperforming the SELFIES models.
 
 The models trained with SELFIES predicted the most valid predictions, as this is an inherent property of SELFIES, but noticeably also predicted the most novel molecules.
@@ -304,7 +306,7 @@ This indicates that the SELFIES models are less prone to overfitting on the trai
 
 While DeepSMILES is closely related to SMILES with only slight modifications to reduce the chance of invalid predictions through syntax errors, it noticeably performs worse than SMILES, even having noticeably less valid predictions with top-10 evaluation.
 The models trained using DeepSMILES are thus more prone to chemical errors as (almost) no syntax errors are possible.
-An example of a prediction with a chemical error made by a DeepSMILES model can be seen in figure \ref{fig:invalid_pred}, where five bonds on one carbon atom are present, which is not possible in a stable environment.
+An example of a prediction with a chemical error made by a DeepSMILES model can be seen in Figure \ref{fig:invalid_pred}, where five bonds on one carbon atom are present, which is not possible in a stable environment.
 The improvements DeepSMILES introduces over SMILES to combat invalid predictions for autoregressive generation seem to have the opposite results for de novo structure prediction, by introducing more chemical errors.
 \begin{figure}[h]
     \centering
@@ -316,13 +318,20 @@ The improvements DeepSMILES introduces over SMILES to combat invalid predictions
 Out of the four representations benchmarked, InchI clearly shows to be the least fit for autoregressive generation, with most of its predictions being invalid.
 This is caused by the fact that InchI has a strict layered structure to ensure its desired properties, which the models struggle to predict correctly.
 When the model does succeed to predict an InchI with a valid syntax, it almost always was present in the training set, showing heavy signs of overfitting.
-To help the model understand the different layers of the InchI representation, a model was trained with a different decoder for each relevant InchI layer. 
-The results for this model can be found in the appendix figure \ref{fig:layered_inchi}.
+To help the model understand the different layers of the InchI representation, a separate model was trained with a different decoder for each relevant InchI layer. 
+The results for this model can be found in Figure \ref{fig:layered_inchi}.
+Unfortunately, while the decoders did achieve at predicting valid predictions for their corresponding layer, the strict InchI structure needed them to exactly describe the same prediction.
 This model was only able to predict a few valid predictions and struggled to synchronize the outputs of the different decoders.
-The poor performance of InchI for this task is expected as the molecular representation was not designed for structure prediction.
+A possible improvement for this model would be to add a way to pass attention between the different decoders, these decoders could then synchronize their predictions to the same molecular structure.
+The poor performance of InchI for this task is expected, as the molecular representation was not designed for structure prediction.
 
-The same conclusions from the \ac{BPE} experiment can be drawn for this experiment, where the use of a pre-computed vocabulary using \ac{BPE} improves the MCES distance and number of valid predictions but makes the model more prone to overfitting by having less novel predictions.
-Only for the SELFIES top-10 evaluation, using \ac{BPE} also improves the number of novel predictions.
+The same conclusions from the \ac{BPE} experiment can be drawn for this experiment, where the use of a pre-computed vocabulary using \ac{BPE} improves the MCES distance and number of valid predictions, but makes the model more prone to overfitting by having less novel predictions.
+SELFIES is the only molecular representation from the benchmark where the number of novel predictions does not substantially drop when using \ac{BPE}.
+This could be explained by the fact that some SELFIES tokens can have a different meaning in context of rings and branches. 
+For example, a token that follows a branch token only denotes the length of the branch, the original chemical meaning of the token does not matter for the prediction.
+When this combination of branch and other token is stored with \ac{BPE}, the model cannot get confused by the original meaning of the second token.
+The SELFIES alphabet is also much larger than the SMILES alphabet, which causes the sequence of tokens to be more diverse, reducing overfitting.
+Because each SELFIES stores a lot of information, less tokens are needed to describe molecular structures, which remarkably does not seem to affect the number of novel predictions.
 
 Overall, in this experiment, SMILES shows to be the best molecular representation when a top-1 evaluation is used.
-Taking the amount of novel predictions into account, SELFIES could also be considered for top-10 evaluation.
+Taking the amount of novel predictions into account, SELFIES could also be considered for top-10 evaluation, as it shows to be much more robust against overfitting.

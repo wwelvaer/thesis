@@ -1,32 +1,26 @@
 \chapter{Discussion}
 \label{chap:discussion}
 
-This chapter first discusses certain problems with the experimental setup that could impact performance, before discussing the results from the experiments.
+This chapter first discusses certain problems with the experimental setup that could impact performance, before discussing certain flaws and improvements for the experiments.
 The last section will briefly mention recommendations for the future of de novo structure prediction from \ac{MS/MS}.
 
 \section{Biases and overfitting}
 \label{sec:overfitting}
  
-A recurring problem for these string-based autoregressive models is the number of predictions that are identical to a label found in the training set.
-When this occurs, it shows that a model is not able to achieve the task of predicting a de novo molecular representation from \ac{MS/MS}, but only repeats the data is has been trained with.
+A recurring problem for string-based autoregressive models is the number of predictions that are identical to a label found in the training set.
+When this occurs, it shows that a model is not able to achieve the task of predicting a de novo molecular representation from \ac{MS/MS}, but only repeats the data it has been trained with.
 There are a few contributing factors to this overfitting problem with the setup used in this thesis.
 Along with the problem of overfitting, there are some biases present in the experimental setup that are discussed in the following sections. 
 
 \subsection{Duplicate training labels}
+\label{sec:duplicate_training_labels}
 As mentioned in the paper from MassSpecGym \cite{bushuiev2024massspecgym}, the labeled dataset is a collection of the most qualitative annotated, open-source mass spectrometry datasets.
-Even though a lot of filtering was performed after thorough quality control, the amount of duplicate molecules is significant.
-Figure \ref{fig:duplicate_smiles} shows the amount of SMILES that have multiple occurrences in the training set. Notice the logarithmic y-axis for readability.
-Even though 84\% of unique molecules have 10 occurrences or less, some molecules are noticeably more present, with one molecule being present 477 times in the training set.
+Even though a lot of filtering was performed after thorough quality control, the amount of duplicate molecules is significant, with 2.0\% of the unique molecules covering 25.1\% of the training data.
+Figure \ref{fig:duplicate_smiles} shows the amount of SMILES that have multiple occurrences in the training set.
 This imbalance does not necessarily reflect the real-world imbalance of molecules as it is caused by the use of domain-focused datasets.
-This causes the models to be trained with a bias towards these more frequent occurring molecules in the training set.
+This causes the models to be trained with a bias towards these more frequently occurring molecules in the training set.
 This imbalance is also present in the validation (and test) set, where the most frequently occurring molecule accounts for 2.7\% (out of the almost 20.000 entries) of the validation data.
-Because of this imbalance, the models will be evaluated with a bias towards these more abundant molecules.
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.6\textwidth]{figures/discussion/duplicate_smiles_training_set.png}
-    \caption{distribution of duplicate SMILES in MassSpecGym's training set with a logarithmic scale}
-    \label{fig:duplicate_smiles}
-\end{figure}
+Because of this imbalance, the models were evaluated with a bias towards these more abundant molecules.
 
 \subsection{Exposure bias}
 
@@ -35,103 +29,71 @@ At inference time, when the model is sampled, the model does not get this help a
 This is often referred to as exposure bias \cite{schmidt2019generalization}.
 The previously discussed imbalance of the training set only makes this bias worse, by training on these frequently occurring token combinations.
 This severely hinders the generalization of the model.
-An example of this exposure bias can be clearly seen in the results from the hyperparameter gridsearch (figure \ref{fig:gridsearch_vs_paper}), where a model with a lower validation loss performed worse after sampling.
+An example of this exposure bias can be clearly seen in the results from the hyperparameter gridsearch (Figure \ref{fig:gridsearch_vs_paper}), where a model with a lower validation loss performed worse after sampling.
 The loss has this teacher forced advantage, while the metrics calculated on the sampled predictions do not.
-Because all models, trained in this thesis, are optimized for validation loss, it can be questioned if they have been overfit on these teacher forced training molecules.
+Because all models trained in this thesis are optimized for validation loss, it can be questioned if they have been overfit on these teacher forced training molecules.
 
 \subsection{Evaluation metrics}
 The two metrics that are used to evaluate a molecular prediction, Tanimoto similarity and \ac{MCES} distance, are somewhat flawed.
 As explained in section \ref{sec:tan_sim}, the Tanimoto similarity uses molecular fingerprints that are unable to store all structural information.
 When the predicted structure is converted to a molecular fingerprint, some structural information is lost.
 The prediction will thus not be evaluated completely.
-The \ac{MCES} distance on the other hand does evaluate the whole molecular structure, but can in some cases behave sub-optimal.
-Looking at the formula in section \ref{sec:mces_dist}, when the evaluation molecules have few edges in their molecular graphs, a model could instead of finding the \acf{MCES}, just minimize the edges in its prediction.
+The \ac{MCES} distance on the other hand does evaluate the whole molecular structure, but can in some cases behave sub-optimally.
+Looking at the formula in Section \ref{sec:mces_dist}, when the evaluation molecules have few edges in their molecular graphs, a model could just minimize the edges in its prediction instead of finding the \acf{MCES}.
 In an extreme case, where the model only predicts nothing (e.g. empty SMILES, zero edges in the molecular graph), the MCES distance will be equal to the number of edges of the ground-truth molecular graph.
 Figure \ref{fig:edges} shows the distribution of edges in the molecular graphs from the molecules in MassSpecGym's labeled dataset.
 With an average number of edges of 37.5, a model that predicts empty SMILES would have an evaluated MCES distance of 37.5 using MassSpecGym.
-While during training, the model does not have access to the MCES distance and will thus probability not reach this extreme case, it does question if some \ac{MCES} distances have a bias towards shorter predictions by this flaw.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{figures/discussion/number_of_edges_massspecgym.png}
-    \caption{distribution of number of edges from molecular graphs of molecules in MassSpecGym's labeled dataset SMILES}
-    \label{fig:edges}
-\end{figure}
-
+While during training, the model does not have access to the MCES distance and will thus probably not reach this extreme case, it does question if some \ac{MCES} distances have a bias towards shorter predictions by this flaw.
 
 Another limitation of both metrics is their inability to distinguish between de novo molecules and those seen during training.
 This can cause problems when the models are not powerful enough to outperform overfitted models.
 A model that, instead of predicting de novo molecules, would just rank the training molecules and return the most similar ones (similar to frequently used database lookup methods), could appear relatively good at predicting de novo molecules when only the \ac{MCES} distance and Tanimoto similarity are considered.
-Only the number of novel molecules accurately shows if a model can generate de novo molecules.
+Only the number of novel molecules accurately shows whether a model can generate de novo molecules.
 Hence, to compare models, and decide which is better at predicting de novo molecules from \ac{MS/MS}, multiple metrics have to be considered.
 
-\section{Experimental results}
+\section{Experimental flaws}
 
-Most of the results from the experiments in this thesis show no clear improvements over the methods used by the de novo models from MassSpecGym.
-However, many conclusions can still be drawn from these results.
-In hindsight, some experiments could still be improved upon by taking the results and discussion points from \ref{sec:overfitting} into account.
-The following sections discuss the results and possible improvements for each experiment.
+In hindsight, some of the experiments conducted in this thesis could still be improved upon by taking the results from Chapter \ref{chap:results} and discussion points from Section \ref{sec:overfitting} into account.
+This section discusses the flaws and possible improvements for the experiments from Chapter \ref{chap:results}.
 
-\subsection{Samplers benchmark}
+\subsection{Choice baseline model}
 
+The SMILES de novo model with \ac{BPE} computed tokenizer from MassSpecGym was chosen as a baseline model for most of the experiments. 
+In these experiments however, it shows that this model was severely overfit on the training SMILES, as almost half of its predictions were identical to SMILES from the training set.
+The first two experiments (i.e. samplers and \ac{BPE} benchmark) should in an ideal case also have to be repeated for a model that is able to predict more de novo molecules, and thus more robust against overfitting (e.g. SELFIES model).
+For the augmentation experiment this would probably not drastically change this experiment's results, as augmentation has proven to be a great tool to combat overfitting \cite{shorten2019survey}.
 
-In later experiments, it shows that the SMILES model used for this experiment was severely overfit on the training SMILES.
-This experiment should in an ideal case also have to be repeated for a model that is able to predict more de novo molecules (e.g. SELFIES model).
+\subsection{SMILES augmentation}
 
-\subsection{\ac{BPE} as pretraining}
-
-
-\subsection{Augmentation}
-
-Augmentation proved to be a difficult task for the SMILES de novo model.
-Although the model noticeably overfits on the training data, augmentation has proven to be a great tool to combat overfitting \cite{shorten2019survey}.
-Using other models, that experience less overfitting, would therefore probably not drastically change this experiment's results.
-
-\subsubsection*{SMILES augmentation}
-
-
-A flaw in the setup of this experiment, is that all augmented models used the same tokenizer, for which \ac{BPE} was only computed on the canonicalized SMILES from the training set.
+A flaw in the setup of the SMILES augmentation experiment, is that all augmented models used the same tokenizer, for which \ac{BPE} was only computed on the canonicalized SMILES from the training set.
 Only patterns from canonicalized SMILES were thus grouped in the vocabulary.
 Random SMILES therefore used more tokens to describe their sequence, making it harder for the model.
 This experiment also may have used too much augmentation, compared to the spectral augmentation experiment.
 Too much augmentation will drown out the original data.
 A model that was trained with e.g. 20\% augmented data may have improved performance.
 
-Another way SMILES synonyms could combat overfitting would be to replace the duplicate SMILES from the training set by different synonyms.
-Instead of keeping the original data as in the experiment, the model would not have these overrepresented SMILES, thus somewhat fixing the imbalance in the training set.
-The drawback is, however, that the original canonicalized SMILES would be severely underrepresented and the bias towards these overrepresented molecules would still be present.
+\subsection{SMILES bias for molecular representations benchmark}
 
-\subsubsection*{Spectral augmentation}
-
-
-A possible improvement for this experiment would be to, instead of randomly augmenting 20\% of the spectra, try to fix the imbalance from the training set by augmenting the spectra of the underrepresented SMILES.
-
-\subsection{Molecular representations benchmark}
-
-From the results in figure \ref{fig:representations}, the SMILES model achieved the best MCES distance and Tanimoto similarity, while the SELFIES model seems to have the most novel predictions.
-The modifications for autoregressive models implemented with DeepSMILES, do not seem to live up to expectations, performing worse than SMILES.
-SELFIES is the only molecular representation from the benchmark where the number of novel prediction does not substantially drop when using \ac{BPE}.
-This could be explained by the fact that some SELFIES tokens can have a different meaning in context of rings and branches. 
-For example, a token that follows a branch token, only denotes the length of the branch, the original chemical meaning of the token does not matter for the prediction.
-When this combination of branch and other token is stored with \ac{BPE}, the model cannot get confused by the original meaning of the second token.
-The SELFIES alphabet is also much larger than the SMILES alphabet, which causes the sequence of tokens to be more diverse, reducing overfitting.
-Because each SELFIES stores a lot of information, less tokens are needed to describe molecular structures, which remarkably does not seem to affect the number of novel predictions.
-
-Overall, SELFIES seems to be the most robust molecular representation.
-The reason SELFIES and DeepSMILES do not outperform the SMILES model could be due to multiple reasons.
+The reason SELFIES and DeepSMILES do not outperform the SMILES model, while in theory they should be more robust, could be due to multiple reasons.
 (1) The optimal \ac{BPE} SMILES hyperparameters were used to train all the models with different molecular representations.
 This could affect the performance compared to the SMILES model, as these hyperparameters might not be optimal for the other models.
 In an ideal case, a hyperparameter search would have to be conducted to accurately compare the best performance for each model.
-(2) The samplers for each evaluation setting were chosen based on the results from the sampler benchmark.
-These samplers again used a \ac{BPE} SMILES model. Even though a temperature search was performed for the naive sampler.
-The samplers used for each evaluation setting may not be optimal for models with different molecular representations.
-The SMILES \ac{BPE} model hence had a noticeable advantage in this experiment, it is then only logical that it achieved the best performance.
+(2) The samplers for each evaluation setting were chosen based on the results from the sampler benchmark, performed using a \ac{BPE} SMILES model.
+Even though a temperature search was performed for the naive sampler,
+the samplers used for each evaluation setting may not be optimal for models with different molecular representations.
+The SMILES \ac{BPE} model, hence, had a noticeable advantage in this experiment. It is then only logical that it achieved the best performance.
 
-The InchI representation is not suited for autoregressive prediction.
-The idea for the multiple decoder model was to divide the prediction problem by predicting the layers from InchI separately.
-Unfortunately, while the decoders did achieve at predicting valid predictions for their corresponding layer, the strict InchI structure needed them to exactly describe the same prediction.
-They did not manage to synchronize their predictions which caused the combined InchI to be invalid.
-To improve this model, these decoders should have a way to pass attention, to predict the same molecular structure.
+
+\subsection{Counteract imbalance with augmentation}
+
+Instead of adding augmented data, the augmentation techniques described in Section \ref{sec:augmentation} could be used to counteract the imbalance of MassSpecGym's labeled dataset discussed in Section \ref{sec:duplicate_training_labels}.
+
+For SMILES augmentation we could replace the duplicate SMILES from the training set by different synonyms.
+This way, the model would not have these overrepresented SMILES, making it harder to overfit on these molecules.
+The drawback is, however, that the original canonicalized SMILES would be severely underrepresented and the bias towards these overrepresented molecules would still be present.
+
+With spectral augmentation, instead of randomly augmenting 20\% of the spectra, we could augment the spectra of the underrepresented SMILES to have a more equal distribution of different molecules.
+However, with the severity of the imbalance in the dataset, this could introduce too much augmentation that would drown the original data.
 
 \section{Future for de novo structure prediction}
 

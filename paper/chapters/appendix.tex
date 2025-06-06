@@ -103,3 +103,19 @@ This section shows the full naive top-10 results of the \ac{BPE}, augmentation a
 \end{figure}
 
 Figure \ref{fig:layered_inchi} shows the performance of the InchI model with three decoders. It is clear the the model struggles to predict any valid molecules.
+
+\section{MassSpecGym's labeled dataset}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/discussion/duplicate_smiles_training_set.png}
+    \caption{distribution of duplicate SMILES in MassSpecGym's training set with a logarithmic scale. Notice the logarithmic y-axis for readability.}
+    \label{fig:duplicate_smiles}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/discussion/number_of_edges_massspecgym.png}
+    \caption{distribution of number of edges from molecular graphs of molecules in MassSpecGym's labeled dataset SMILES.}
+    \label{fig:edges}
+\end{figure}
