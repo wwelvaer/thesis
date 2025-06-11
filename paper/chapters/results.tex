@@ -82,10 +82,9 @@ A higher temperature increases the randomness of the sampler too much, causing t
 A lower temperature starts to force the predictions towards the greedy sampler.
 These results shows that, with the temperature parameter, there is a tradeoff to be made between exploitation (low temperature) and exploration (high temperature).
 The optimal temperature will depend on which evaluation setting is used.
-In top-1 evaluation, each invalid prediction is penalized; therefore, exploitation — which maximizes the number of valid predictions — is important.
+In top-1 evaluation, each invalid prediction is penalized; therefore, exploitation, which maximizes the number of valid predictions, is important.
 With top-10 evaluation, if at least one of the ten predictions per spectrum is valid, the other invalid predictions are not penalized. This gives the sampler room for exploration.
-This explains the results in Figure \ref{fig:naive_and_greedy}.
-The greedy sampler maximizes exploitation and thus outperforms the naive sampler in the top-1 evaluation setting.
+This explains the results in Figure \ref{fig:naive_and_greedy}, the greedy sampler maximizes exploitation and thus outperforms the naive sampler in the top-1 evaluation setting.
 In contrast to the naive sampler, the greedy sampler is incapable of exploring multiple predictions.
 Figure \ref{fig:naive_and_greedy} shows that exploration does result in better predictions, but less valid predictions, allowing the naive sampler to perform better with top-10 evaluation.
 
@@ -137,9 +136,9 @@ Forcing the sampler to predict longer token sequences with parameter $\alpha$ th
 
 Figure \ref{fig:beam-search} shows that the top-1 and top-10 MCES distance for the beam search sampler improves with increased search space as expected.
 The spike in MCES distance and fraction of valid predictions on the first data point is because the beam width is 1, meaning it is essentially the same as the greedy sampler.
-There is a clear performance difference between the top-1 and top-10 evaluation settings, indicating that the prediction with the lowest score is often not the prediction with the lowest MCES distance.
+There is a clear performance difference between the top-1 and top-10 evaluation settings, indicating that the prediction with the highest score is often not the prediction with the lowest MCES distance.
 This shows that the scoring function, and thus the output probabilities from the model, are not optimal for extracting the correct molecular structure.
-This again indicates a flaw with the loss, for which the model was optimized.
+This again indicates a flaw with the loss function, for which the model was optimized.
 
 These suboptimal output probabilities also explain why the beam search sampler, which is inherently better than the greedy sampler at exploiting the model's output, performs worse in the top-1 setting than the greedy sampler.
 This exploitation is clearly visible on the fraction of valid predictions plot in Figure \ref{fig:beam-search}, where the best scoring prediction from the sampler (with a beam width > 1) is always a valid molecule.
@@ -208,9 +207,9 @@ Sadly, its MCES distance and Tanimoto similarity is the worst out of all the mod
 Overall, using \ac{BPE} increases the number of valid predictions at the cost of novel predictions.
 When solely looking at the MCES distance and Tanimoto similarity, using \ac{BPE} can (in some cases) improve the model's performance.
 The main advantage is that by grouping multiple tokens as one, \ac{BPE} decreases the number of tokens the model has to predict.
-When the model has less tokens to predict, it will make less mistakes, leading to more valid molecules.
+When the model has fewer tokens to predict, it will make less mistakes, leading to more valid molecules.
 The number of novel predictions does put these results in doubt, questioning the generalization of these models.
-The model will favour grouped tokens seen in the training data, and by having less tokens to predict, it will more often lead to predictions that are identical to molecules from the training set.
+The model will favour grouped tokens seen in the training data, and by having fewer tokens to predict, it will more often lead to predictions that are identical to molecules from the training set.
 When using \ac{BPE}, the parameters of the algorithm should be tuned such that a balance between performance and minimal overfitting could be found.
 
 Because the \ac{BPE} 4M tokenizer is the standard used by MassSpecGym's de novo SMILES model and reached the best MCES distance, this tokenizer is used for the following experiments in thesis. 
@@ -311,7 +310,7 @@ The improvements DeepSMILES introduces over SMILES to combat invalid predictions
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.5\textwidth]{figures/results/invalid_pred.JPG}
-    \caption{2-dimensional representation of prediction with chemical error (SMILES: C1=CC=C(C(=C1C2=CC(=O)(C3=C(O2)C=CC(=C3O)O)O)O)O )}
+    \caption{2-dimensional representation of prediction with chemical error. (SMILES: C1=CC=C(C(=C1C2=CC(=O)(C3=C(O2)C=CC(=C3O)O)O)O)O )}
     \label{fig:invalid_pred}
 \end{figure}
 
@@ -331,7 +330,7 @@ This could be explained by the fact that some SELFIES tokens can have a differen
 For example, a token that follows a branch token only denotes the length of the branch, the original chemical meaning of the token does not matter for the prediction.
 When this combination of branch and other token is stored with \ac{BPE}, the model cannot get confused by the original meaning of the second token.
 The SELFIES alphabet is also much larger than the SMILES alphabet, which causes the sequence of tokens to be more diverse, reducing overfitting.
-Because each SELFIES stores a lot of information, less tokens are needed to describe molecular structures, which remarkably does not seem to affect the number of novel predictions.
+Because each SELFIES stores a lot of information, fewer tokens are needed to describe molecular structures, which remarkably does not seem to affect the number of novel predictions.
 
 Overall, in this experiment, SMILES shows to be the best molecular representation when a top-1 evaluation is used.
 Taking the amount of novel predictions into account, SELFIES could also be considered for top-10 evaluation, as it shows to be much more robust against overfitting.
